@@ -10,6 +10,7 @@ import { Save } from "./save.js";
 import { Profile, todayChallenge } from "./progression.js";
 import { setupTouch, isTouchDevice } from "./touch.js";
 import { Net } from "./net.js";
+import { t, LANGS, getLang, setLang, applyStaticTranslations } from "./i18n.js";
 import * as UI from "./ui.js";
 
 const $ = (id) => document.getElementById(id);
@@ -62,8 +63,8 @@ function startTutorial() {
 function renderTutorial() {
   const el = $("tutorial-callout");
   if (tutStep < 0 || tutStep >= TUTORIAL_STEPS.length) { el.classList.add("hidden"); return; }
-  $("tc-text").innerHTML = TUTORIAL_STEPS[tutStep];
-  $("tc-next").textContent = tutStep >= TUTORIAL_STEPS.length - 1 ? "Ho capito!" : "Avanti →";
+  $("tc-text").innerHTML = t(TUTORIAL_STEPS[tutStep]);
+  $("tc-next").textContent = tutStep >= TUTORIAL_STEPS.length - 1 ? t("Ho capito!") : t("Avanti →");
   el.classList.remove("hidden");
 }
 function tutorialNext() {
@@ -299,7 +300,7 @@ function buildDimensionCards() {
   for (const d of Object.values(DIMENSIONS)) {
     const card = document.createElement("div");
     card.className = "dim-card " + cls[d.id];
-    card.innerHTML = `<span class="dim-emoji">${d.emoji}</span><h3>${d.name}</h3><p>${d.desc}</p>`;
+    card.innerHTML = `<span class="dim-emoji">${d.emoji}</span><h3>${t(d.name)}</h3><p>${t(d.desc)}</p>`;
     card.onclick = () => startGame(d.id);
     c.appendChild(card);
   }
@@ -371,7 +372,7 @@ function continueGame() {
   UI.setQuest(null);
   game.start(charConfig, save.state);
   UI.updateHUD(game.state);
-  UI.toast(`Bentornato${charConfig.name ? ", " + charConfig.name : ""}! Riprendi da ${DIMENSIONS[save.state.dim].name}.`, 3000);
+  UI.toast(t("Bentornato{name}! Riprendi da {dim}.", { name: charConfig.name ? ", " + charConfig.name : "", dim: t(DIMENSIONS[save.state.dim].name) }), 3000);
 }
 
 function onDeath(state) {
@@ -380,22 +381,22 @@ function onDeath(state) {
   UI.hide("hud");
   if (game && game.mode === "survival") {
     const wave = state.survivalWave || 0;
-    $("death-text").textContent = `Hai resistito fino all'ondata ${wave}! Il tuo punteggio è in classifica.`;
-    $("death-bignum").innerHTML = `🌊 ${wave} <span class="muted">ondate</span>`;
+    $("death-text").textContent = t("Hai resistito fino all'ondata {n}! Il tuo punteggio è in classifica.", { n: wave });
+    $("death-bignum").innerHTML = `🌊 ${wave} <span class="muted">${t("ondate")}</span>`;
     $("death-remain").classList.add("hidden");
-    $("btn-respawn").textContent = "🌊 Rigioca";
+    $("btn-respawn").textContent = t("🌊 Rigioca");
     refreshTitleBar();
   } else {
     $("death-challenges").textContent = state.challenges;
-    $("death-bignum").innerHTML = `+100 <span class="muted">sfide</span>`;
+    $("death-bignum").innerHTML = `+100 <span class="muted">${t("sfide")}</span>`;
     $("death-remain").classList.remove("hidden");
-    $("btn-respawn").textContent = "Rialzati";
+    $("btn-respawn").textContent = t("Rialzati");
     const texts = [
       "I mondi vacillano... ma la tua storia non è finita.",
       "Sei caduto nell'oscurità. Rialzati e riprova.",
       "Il tuo io parallelo ha ancora bisogno di te.",
     ];
-    $("death-text").textContent = texts[Math.floor(Math.random() * texts.length)];
+    $("death-text").textContent = t(texts[Math.floor(Math.random() * texts.length)]);
   }
   showScreen("screen-death");
 }
@@ -404,10 +405,10 @@ function onVictory(state) {
   if (game) game.closeMap();
   Save.clear();
   UI.hide("hud");
-  const name = charConfig.name || "Eroe";
+  const name = charConfig.name || t("Eroe");
   $("victory-text").innerHTML =
-    `${name}, hai liberato il tuo io imprigionato sulla Luna e lo hai portato nella luce del Sole.<br><br>` +
-    `I portali sono sigillati, l'implosione dei mondi è scongiurata.`;
+    t("{name}, hai liberato il tuo io imprigionato sulla Luna e lo hai portato nella luce del Sole.", { name }) + "<br><br>" +
+    t("I portali sono sigillati, l'implosione dei mondi è scongiurata.");
   drawShareCard(state);
   refreshTitleBar();
   showScreen("screen-victory");
@@ -445,29 +446,29 @@ function buildShop() {
     const card = document.createElement("div");
     card.className = "shop-item";
     let btn;
-    if (owned) btn = `<button class="owned">Sbloccato ✓</button>`;
+    if (owned) btn = `<button class="owned">${t("Sbloccato ✓")}</button>`;
     else if (Profile.coins >= price) btn = `<button data-buy-outfit="${o.id}">🪙 ${price}</button>`;
     else btn = `<button class="cant">🪙 ${price}</button>`;
-    card.innerHTML = `<div class="si-emoji">${o.emoji}</div><div class="si-name">${o.label}</div>${btn}`;
+    card.innerHTML = `<div class="si-emoji">${o.emoji}</div><div class="si-name">${t(o.label)}</div>${btn}`;
     og.appendChild(card);
   }
   // Scie
   const tg = $("shop-trails");
   tg.innerHTML = "";
-  for (const t of TRAILS) {
-    const owned = Profile.hasTrail(t.id);
-    const equipped = Profile.profile.equippedTrail === t.id;
+  for (const tr of TRAILS) {
+    const owned = Profile.hasTrail(tr.id);
+    const equipped = Profile.profile.equippedTrail === tr.id;
     const card = document.createElement("div");
     card.className = "shop-item";
-    const swatch = t.color != null
-      ? `<div class="si-swatch" style="background:${t.rainbow ? "linear-gradient(90deg,#ff4d4d,#ffd35c,#4dd39a,#4df3ff,#b96bff)" : "#" + t.color.toString(16).padStart(6, "0")}"></div>`
+    const swatch = tr.color != null
+      ? `<div class="si-swatch" style="background:${tr.rainbow ? "linear-gradient(90deg,#ff4d4d,#ffd35c,#4dd39a,#4df3ff,#b96bff)" : "#" + tr.color.toString(16).padStart(6, "0")}"></div>`
       : `<div class="si-swatch" style="background:transparent;border:1px dashed #556"></div>`;
     let btn;
-    if (equipped) btn = `<button class="equipped">Equipaggiata ✓</button>`;
-    else if (owned) btn = `<button data-equip-trail="${t.id}">Equipaggia</button>`;
-    else if (Profile.coins >= t.price) btn = `<button data-buy-trail="${t.id}">🪙 ${t.price}</button>`;
-    else btn = `<button class="cant">🪙 ${t.price}</button>`;
-    card.innerHTML = `<div class="si-name">${t.label}</div>${swatch}${btn}`;
+    if (equipped) btn = `<button class="equipped">${t("Equipaggiata ✓")}</button>`;
+    else if (owned) btn = `<button data-equip-trail="${tr.id}">${t("Equipaggia")}</button>`;
+    else if (Profile.coins >= tr.price) btn = `<button data-buy-trail="${tr.id}">🪙 ${tr.price}</button>`;
+    else btn = `<button class="cant">🪙 ${tr.price}</button>`;
+    card.innerHTML = `<div class="si-name">${t(tr.label)}</div>${swatch}${btn}`;
     tg.appendChild(card);
   }
   // click handlers (delegati)
@@ -500,10 +501,10 @@ function buildUpgrades() {
     let pips = "";
     for (let i = 0; i < u.max; i++) pips += `<div class="upg-pip${i < lvl ? " on" : ""}"></div>`;
     let btn;
-    if (cost == null) btn = `<button class="maxed">MASSIMO ✓</button>`;
-    else if (Profile.coins >= cost) btn = `<button data-upg="${u.id}">🪙 ${cost} (${u.per})</button>`;
+    if (cost == null) btn = `<button class="maxed">${t("MASSIMO ✓")}</button>`;
+    else if (Profile.coins >= cost) btn = `<button data-upg="${u.id}">🪙 ${cost} (${t(u.per)})</button>`;
     else btn = `<button class="cant">🪙 ${cost}</button>`;
-    card.innerHTML = `<div class="upg-head"><span class="upg-icon">${u.icon}</span><div><div class="upg-name">${u.name}</div><div class="upg-desc">Liv. ${lvl}/${u.max} · ${u.desc}</div></div></div><div class="upg-pips">${pips}</div>${btn}`;
+    card.innerHTML = `<div class="upg-head"><span class="upg-icon">${u.icon}</span><div><div class="upg-name">${t(u.name)}</div><div class="upg-desc">${t("Liv.")} ${lvl}/${u.max} · ${t(u.desc)}</div></div></div><div class="upg-pips">${pips}</div>${btn}`;
     grid.appendChild(card);
   }
   grid.querySelectorAll("[data-upg]").forEach((b) => b.onclick = () => {
@@ -519,7 +520,7 @@ function buildAchievements() {
     const unlocked = Profile.hasAchievement(a.id);
     const card = document.createElement("div");
     card.className = "ach-card " + (unlocked ? "unlocked" : "locked");
-    card.innerHTML = `<div class="ac-icon">${unlocked ? a.icon : "🔒"}</div><div><div class="ac-name">${a.name}</div><div class="ac-desc">${a.desc}</div></div>`;
+    card.innerHTML = `<div class="ac-icon">${unlocked ? a.icon : "🔒"}</div><div><div class="ac-name">${t(a.name)}</div><div class="ac-desc">${t(a.desc)}</div></div>`;
     grid.appendChild(card);
   }
 }
@@ -541,12 +542,13 @@ function refreshDaily() {
   const ch = todayChallenge();
   const done = !Profile.dailyChallengeAvailable();
   $("db-icon").textContent = ch.icon;
-  $("db-name").textContent = ch.name;
-  $("db-desc").textContent = ch.desc;
-  $("db-goal").textContent = done ? "✓ Completata oggi!" : `Obiettivo: ${ch.goalDesc} — Ricompensa: ${ch.reward} 🪙`;
+  const dbt = document.querySelector(".db-title");
+  if (dbt) dbt.innerHTML = `${t("Sfida del Giorno")} · <span id="db-name">${t(ch.name)}</span>`;
+  $("db-desc").textContent = t(ch.desc);
+  $("db-goal").textContent = done ? t("✓ Completata oggi!") : `${t("Obiettivo:")} ${t(ch.goalDesc)} — ${t("Ricompensa:")} ${ch.reward} 🪙`;
   const btn = $("btn-daily");
   btn.disabled = done;
-  btn.textContent = done ? "Completata ✓" : "Gioca";
+  btn.textContent = done ? t("Completata ✓") : t("Gioca");
   banner.classList.toggle("done", done);
   banner.classList.remove("hidden");
 }
@@ -559,15 +561,15 @@ function buildLeaderboard() {
   let entries = Profile.leaderboard();
   if (lbFilter === "survival") entries = entries.filter((e) => e.mode === "survival");
   else if (lbFilter === "adventure") entries = entries.filter((e) => e.mode !== "survival");
-  if (!entries.length) { list.innerHTML = `<div class="lb-empty">Nessun risultato in questa categoria. Gioca una partita per entrare in classifica!</div>`; return; }
+  if (!entries.length) { list.innerHTML = `<div class="lb-empty">${t("Nessun risultato in questa categoria. Gioca una partita per entrare in classifica!")}</div>`; return; }
   entries.forEach((e, i) => {
     const row = document.createElement("div");
     row.className = "lb-row" + (i === 0 ? " top" : "");
     const medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : (i + 1);
     const tag = e.mode === "survival" ? "🌊" : (e.won ? "🏆" : "");
     row.innerHTML = `<div class="lb-rank">${medal}</div>
-      <div class="lb-name">${e.name} ${tag}<div class="lb-meta">${e.mode === "survival" ? "Sopravvivenza · " : ""}Grado ${e.level} · ${e.date}</div></div>
-      <div class="lb-score">${e.score} pt</div>`;
+      <div class="lb-name">${e.name} ${tag}<div class="lb-meta">${e.mode === "survival" ? t("Sopravvivenza") + " · " : ""}${t("Grado")} ${e.level} · ${e.date}</div></div>
+      <div class="lb-score">${e.score} ${t("pt")}</div>`;
     list.appendChild(row);
   });
 }
@@ -578,9 +580,10 @@ function maybeDailyReward() {
   const r = Profile.claimDaily();
   if (!r) return;
   refreshTitleBar();
-  UI.openDialog("🎁 Ricompensa giornaliera",
-    `Bentornato! Hai ricevuto ${r.coins} 🪙 monete.\nSerie di accessi: ${r.streak} ${r.streak > 1 ? "giorni" : "giorno"} di fila. Torna domani per una ricompensa più grande!`,
-    [{ label: "Grazie!", primary: true, cb: () => UI.closeDialog() }]);
+  UI.openDialog(t("🎁 Ricompensa giornaliera"),
+    t("Bentornato! Hai ricevuto {coins} 🪙 monete.", { coins: r.coins }) + "\n" +
+    t("Serie di accessi: {streak} {days} di fila. Torna domani per una ricompensa più grande!", { streak: r.streak, days: r.streak > 1 ? t("giorni") : t("giorno") }),
+    [{ label: t("Grazie!"), primary: true, cb: () => UI.closeDialog() }]);
 }
 
 // ---------- Card condivisibile (vittoria) ----------
@@ -597,22 +600,22 @@ function drawShareCard(state) {
   ctx.globalAlpha = 1;
   ctx.textAlign = "center";
   ctx.fillStyle = "#4df3ff"; ctx.font = "bold 20px 'Trebuchet MS', sans-serif";
-  ctx.fillText("FUTUREME — Le Tre Dimensioni", W / 2, 44);
+  ctx.fillText(t("FUTUREME — Le Tre Dimensioni"), W / 2, 44);
   ctx.fillStyle = "#ffd35c"; ctx.font = "900 40px 'Trebuchet MS', sans-serif";
-  ctx.fillText("HO SALVATO I MONDI", W / 2, 100);
+  ctx.fillText(t("HO SALVATO I MONDI"), W / 2, 100);
   ctx.fillStyle = "#eaf2ff"; ctx.font = "18px 'Trebuchet MS', sans-serif";
-  const name = charConfig.name || "Un eroe";
-  ctx.fillText(`${name} · Grado ${Profile.level}`, W / 2, 138);
+  const name = charConfig.name || t("Un eroe");
+  ctx.fillText(`${name} · ${t("Grado")} ${Profile.level}`, W / 2, 138);
   ctx.font = "22px 'Trebuchet MS', sans-serif"; ctx.fillStyle = "#cfe0ff";
   const stats = [
-    `💀 Morti: ${state.deaths}`,
-    `🔒 Portali sigillati: ${state.portalsClosed}`,
-    `👹 Guardiani sconfitti: ${Profile.profile.bossDefeats}`,
-    `🪙 Monete: ${Profile.coins}`,
+    `💀 ${t("Morti")}: ${state.deaths}`,
+    `🔒 ${t("Portali sigillati")}: ${state.portalsClosed}`,
+    `👹 ${t("Guardiani sconfitti")}: ${Profile.profile.bossDefeats}`,
+    `🪙 ${t("Monete")}: ${Profile.coins}`,
   ];
   stats.forEach((s, i) => ctx.fillText(s, W / 2, 186 + i * 30));
   ctx.fillStyle = "#8ea2d6"; ctx.font = "14px 'Trebuchet MS', sans-serif";
-  ctx.fillText("Riesci a fare di meglio? #FUTUREME", W / 2, H - 18);
+  ctx.fillText(t("Riesci a fare di meglio? #FUTUREME"), W / 2, H - 18);
 }
 
 function downloadShareCard() {
@@ -640,9 +643,9 @@ function showIntro() {
 }
 function renderStorySlide() {
   const slide = $("intro-slide");
-  slide.innerHTML = STORY[storyIndex];
+  slide.innerHTML = t(STORY[storyIndex]);
   slide.classList.remove("show"); void slide.offsetWidth; slide.classList.add("show");
-  $("btn-intro-next").textContent = storyIndex >= STORY.length - 1 ? "Crea il tuo personaggio →" : "Avanti →";
+  $("btn-intro-next").textContent = storyIndex >= STORY.length - 1 ? t("Crea il tuo personaggio →") : t("Avanti →");
   const dots = $("intro-dots");
   dots.innerHTML = "";
   for (let i = 0; i < STORY.length; i++) {
@@ -661,8 +664,30 @@ function finishIntro() {
   showScreen("screen-creator");
 }
 
+function buildLangPicker() {
+  const el = $("lang-picker");
+  if (!el) return;
+  el.innerHTML = "";
+  for (const l of LANGS) {
+    const b = document.createElement("button");
+    b.className = "lang-btn" + (l.code === getLang() ? " active" : "");
+    b.textContent = l.flag; b.title = l.name;
+    b.onclick = () => {
+      setLang(l.code);
+      [...el.children].forEach((c) => c.classList.remove("active"));
+      b.classList.add("active");
+      // ricostruisci le schermate dinamiche con la nuova lingua
+      buildDimensionCards(); refreshTitleBar(); refreshDaily();
+      setupCreatorControls();
+    };
+    el.appendChild(b);
+  }
+}
+
 function init() {
   window.__futuremeProfile = Profile; // hook per debug/test
+  applyStaticTranslations();
+  buildLangPicker();
   preview = new CreatorPreview($(".creator-right") || document.querySelector(".creator-right"));
   setupCreatorControls();
   buildDimensionCards();

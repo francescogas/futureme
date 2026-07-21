@@ -13,6 +13,7 @@ import { Minimap, renderFullMap } from "./minimap.js";
 import { Weather } from "./weather.js";
 import { Profile } from "./progression.js";
 import * as UI from "./ui.js";
+import { t } from "./i18n.js";
 
 const rand = (a, b) => a + Math.random() * (b - a);
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
@@ -212,9 +213,9 @@ export class Game {
     if (this.mode === "survival") {
       UI.cityBanner("ARENA", "Sopravvivenza", "🌊 Resisti alle ondate!");
     } else if (dimId === "earth" && this.city) {
-      UI.cityBanner(this.city.name, "Terra · " + this.city.country, this.city.landmark);
+      UI.cityBanner(this.city.name, t("Terra") + " · " + t(this.city.country), this.city.landmark);
     } else {
-      UI.cityBanner(DIMENSIONS[dimId].name, "Dimensione", DIMENSIONS[dimId].emoji + " " + DIMENSIONS[dimId].desc.split(".")[0]);
+      UI.cityBanner(DIMENSIONS[dimId].name, t("Dimensione"), DIMENSIONS[dimId].emoji + " " + t(DIMENSIONS[dimId].desc.split(".")[0]));
     }
     if (spawnMsg) UI.toast(spawnMsg);
     else if (this.weather && this.weather.type !== "clear" && this.weather.type !== "cloudy") {
@@ -467,7 +468,7 @@ export class Game {
       this.boss = boss; this.worldRoot.add(boss); UI.setBossName(boss.userData.name);
     }
     UI.setWave(n, this._survivalEnemiesLeft());
-    UI.toast(isBossWave ? `🌊 ONDATA ${n} — BOSS!` : `🌊 Ondata ${n}`, 2200);
+    UI.toast(isBossWave ? t("🌊 ONDATA {n} — BOSS!", { n }) : t("🌊 Ondata {n}", { n }), 2200);
     if (this.audio) this.audio.seal();
   }
 
@@ -488,7 +489,7 @@ export class Game {
       Profile.addCoins(bonus); Profile.addXP(bonus);
       UI.setCoins(Profile.coins);
       UI.coinPopup(bonus);
-      UI.toast(`✅ Ondata ${s.wave} superata! +${bonus} 🪙 — preparati...`, 2600);
+      UI.toast(t("✅ Ondata {w} superata! +{b} 🪙 — preparati...", { w: s.wave, b: bonus }), 2600);
       // ricompensa: nuove cariche/power-up ogni tot ondate
       if (s.wave % 3 === 0) {
         for (let i = 0; i < 2; i++) { const pu = this._spawnAt((x, z) => makePowerup(pick(Object.keys(POWERUPS)), x, z)); this.objects.powerups.push(pu); this.worldRoot.add(pu); }
@@ -540,6 +541,7 @@ export class Game {
     if (dimId === "earth") UI.setObjective("raccogli 🔑 chiavi e 🛂 passaporti, poi entra in un portale (E).");
     else if (dimId === "moon") UI.setObjective("chiudi i 🔴 portali d'invasione e difenditi. Libera il tuo io con la pozione.");
     else UI.setObjective("raccogli i 3 ingredienti della pozione: 🌿 💎 🍊.");
+    // (setObjective traduce internamente il testo)
   }
 
   // ---------- API pubbliche per i controlli touch ----------

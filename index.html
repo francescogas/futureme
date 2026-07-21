@@ -54,7 +54,7 @@
       <div class="tc-text" id="tc-text"></div>
       <div class="tc-actions">
         <button id="tc-next" class="tc-btn">Avanti →</button>
-        <button id="tc-skip" class="tc-skip">Salta il tutorial</button>
+        <button id="tc-skip" class="tc-skip" data-i18n="Salta il tutorial">Salta il tutorial</button>
       </div>
     </div>
 
@@ -75,10 +75,10 @@
     <div id="fullmap" class="fullmap hidden">
       <div class="fullmap-inner">
         <canvas id="fullmap-canvas" width="640" height="640"></canvas>
-        <div class="fullmap-legend">
+        <div class="fullmap-legend" data-i18n="🟢 Giocatori · 🟡 Chiavi · 🔵 Sfera · 🟣 Power-up/NPC · 🔴 Mostri/Boss · 🔷 Portali">
           🟢 Giocatori · 🟡 Chiavi · 🔵 Sfera · 🟣 Power-up/NPC · 🔴 Mostri/Boss · 🔷 Portali
         </div>
-        <button id="btn-map-close" class="big-btn">Chiudi (M)</button>
+        <button id="btn-map-close" class="big-btn" data-i18n="Chiudi (M)">Chiudi (M)</button>
       </div>
     </div>
     <div id="emote-bar" class="emote-bar hidden"></div>
@@ -91,7 +91,7 @@
 
     <div class="minimap-wrap">
       <canvas id="minimap" width="150" height="150"></canvas>
-      <div class="minimap-label">RADAR</div>
+      <div class="minimap-label" data-i18n="RADAR">RADAR</div>
     </div>
 
     <div id="hud-sphere" class="hud-sphere hidden">
@@ -107,7 +107,7 @@
     <div id="chat-box" class="chat-box hidden">
       <div id="chat-log" class="chat-log"></div>
       <div class="chat-input-row">
-        <input id="chat-input" class="chat-input" maxlength="140" placeholder="Scrivi un messaggio... (Invio)" />
+        <input id="chat-input" class="chat-input" maxlength="140" placeholder="Scrivi un messaggio... (Invio)" data-i18n-ph="Scrivi un messaggio... (Invio)" />
       </div>
     </div>
   </div>
@@ -138,10 +138,11 @@
       <span class="tp-item">⭐ Grado <b id="tp-rank">1</b></span>
       <span class="tp-item">🏆 <b id="tp-ach">0</b>/<span id="tp-ach-total">10</span></span>
     </div>
+    <div class="lang-picker" id="lang-picker"></div>
     <div class="title-wrap">
       <h1 class="game-logo">FUTURE<span>ME</span></h1>
-      <p class="tagline">Le Tre Dimensioni · Terra · Luna · Sole</p>
-      <p class="subtitle">Trova il tuo io negli altri mondi. Salva la realtà dall'implosione.</p>
+      <p class="tagline" data-i18n="Le Tre Dimensioni · Terra · Luna · Sole">Le Tre Dimensioni · Terra · Luna · Sole</p>
+      <p class="subtitle" data-i18n="Trova il tuo io negli altri mondi. Salva la realtà dall'implosione.">Trova il tuo io negli altri mondi. Salva la realtà dall'implosione.</p>
       <div id="daily-banner" class="daily-banner hidden">
         <div class="db-left"><span class="db-icon" id="db-icon">🎯</span></div>
         <div class="db-mid">
@@ -151,21 +152,21 @@
         </div>
         <button id="btn-daily" class="db-btn">Gioca</button>
       </div>
-      <button id="btn-continue" class="big-btn hidden">↻ CONTINUA</button>
-      <button id="btn-start" class="big-btn">▶ INIZIA L'AVVENTURA</button>
-      <button id="btn-survival" class="big-btn">🌊 SOPRAVVIVENZA</button>
+      <button id="btn-continue" class="big-btn hidden" data-i18n="↻ CONTINUA">↻ CONTINUA</button>
+      <button id="btn-start" class="big-btn" data-i18n="▶ INIZIA L'AVVENTURA">▶ INIZIA L'AVVENTURA</button>
+      <button id="btn-survival" class="big-btn" data-i18n="🌊 SOPRAVVIVENZA">🌊 SOPRAVVIVENZA</button>
       <div class="title-row">
-        <button id="btn-shop" class="ghost-btn">🛒 Negozio</button>
-        <button id="btn-upgrades" class="ghost-btn">⬆️ Potenziamenti</button>
-        <button id="btn-achievements" class="ghost-btn">🏆 Obiettivi</button>
-        <button id="btn-leaderboard" class="ghost-btn">📊 Classifica</button>
-        <button id="btn-multiplayer" class="ghost-btn">🌐 Multiplayer</button>
-        <button id="btn-settings" class="ghost-btn">⚙️ Impostazioni</button>
-        <button id="btn-howto" class="ghost-btn">Come si gioca</button>
-        <button id="btn-story" class="ghost-btn">La storia</button>
+        <button id="btn-shop" class="ghost-btn" data-i18n="🛒 Negozio">🛒 Negozio</button>
+        <button id="btn-upgrades" class="ghost-btn" data-i18n="⬆️ Potenziamenti">⬆️ Potenziamenti</button>
+        <button id="btn-achievements" class="ghost-btn" data-i18n="🏆 Obiettivi">🏆 Obiettivi</button>
+        <button id="btn-leaderboard" class="ghost-btn" data-i18n="📊 Classifica">📊 Classifica</button>
+        <button id="btn-multiplayer" class="ghost-btn" data-i18n="🌐 Multiplayer">🌐 Multiplayer</button>
+        <button id="btn-settings" class="ghost-btn" data-i18n="⚙️ Impostazioni">⚙️ Impostazioni</button>
+        <button id="btn-howto" class="ghost-btn" data-i18n="Come si gioca">Come si gioca</button>
+        <button id="btn-story" class="ghost-btn" data-i18n="La storia">La storia</button>
       </div>
       <div id="best-stats" class="best-stats"></div>
-      <div class="credits">Un prototipo giocabile — muoviti con <b>WASD</b> / frecce · <b>Mouse</b> per guardare</div>
+      <div class="credits" data-i18n="Un prototipo giocabile — muoviti con <b>WASD</b> / frecce · <b>Mouse</b> per guardare" data-i18n-html>Un prototipo giocabile — muoviti con <b>WASD</b> / frecce · <b>Mouse</b> per guardare</div>
     </div>
   </div>
 
@@ -173,7 +174,7 @@
   <div id="screen-shop" class="overlay hidden">
     <div class="panel wide">
       <div class="shop-head">
-        <h2>🛒 Negozio</h2>
+        <h2 data-i18n="🛒 Negozio">🛒 Negozio</h2>
         <span class="shop-coins">🪙 <b id="shop-coins">0</b></span>
       </div>
       <p class="muted">Guadagna monete giocando e sblocca stili e scie luminose.</p>
@@ -181,7 +182,7 @@
       <div class="shop-grid" id="shop-outfits"></div>
       <h3 class="shop-sec">Scie luminose</h3>
       <div class="shop-grid" id="shop-trails"></div>
-      <button id="btn-shop-back" class="big-btn">Indietro</button>
+      <button id="btn-shop-back" class="big-btn" data-i18n="Indietro">Indietro</button>
     </div>
   </div>
 
@@ -189,22 +190,22 @@
   <div id="screen-upgrades" class="overlay hidden">
     <div class="panel wide">
       <div class="shop-head">
-        <h2>⬆️ Potenziamenti permanenti</h2>
+        <h2 data-i18n="⬆️ Potenziamenti permanenti">⬆️ Potenziamenti permanenti</h2>
         <span class="shop-coins">🪙 <b id="upg-coins">0</b></span>
       </div>
       <p class="muted">Bonus permanenti che valgono in tutte le partite. Guadagna monete giocando.</p>
       <div class="upg-grid" id="upg-grid"></div>
-      <button id="btn-upg-back" class="big-btn">Indietro</button>
+      <button id="btn-upg-back" class="big-btn" data-i18n="Indietro">Indietro</button>
     </div>
   </div>
 
   <!-- ===================== OBIETTIVI ===================== -->
   <div id="screen-achievements" class="overlay hidden">
     <div class="panel wide">
-      <h2>🏆 Obiettivi</h2>
+      <h2 data-i18n="🏆 Obiettivi">🏆 Obiettivi</h2>
       <p class="muted">Sblocca ricompense e mostra le tue imprese.</p>
       <div class="ach-grid" id="ach-grid"></div>
-      <button id="btn-ach-back" class="big-btn">Indietro</button>
+      <button id="btn-ach-back" class="big-btn" data-i18n="Indietro">Indietro</button>
     </div>
   </div>
 
@@ -215,7 +216,7 @@
       <div class="intro-slide" id="intro-slide"></div>
       <div class="intro-actions">
         <button id="btn-intro-next" class="big-btn">Avanti →</button>
-        <button id="btn-intro-skip" class="ghost-btn">Salta l'introduzione</button>
+        <button id="btn-intro-skip" class="ghost-btn" data-i18n="Salta l'introduzione">Salta l'introduzione</button>
       </div>
       <div class="intro-dots" id="intro-dots"></div>
     </div>
@@ -224,7 +225,7 @@
   <!-- ===================== COME SI GIOCA ===================== -->
   <div id="screen-howto" class="overlay hidden">
     <div class="panel">
-      <h2>Come si gioca</h2>
+      <h2 data-i18n="Come si gioca">Come si gioca</h2>
       <ul class="howto-list">
         <li><b>WASD / Frecce</b> — muoviti nel mondo 3D</li>
         <li><b>Mouse</b> — ruota la telecamera · <b>Shift</b> — corri</li>
@@ -236,7 +237,7 @@
         <li><b>Il tuo Io parallelo</b> — potresti incontrarlo. Sulla Luna è prigioniero e forse è diventato cattivo. Solo la pozione può salvarlo e portarlo nella dimensione Sole.</li>
         <li><b>Sfide</b> — parti da 1000 sfide. Ogni volta che muori aumentano di 100. Completa gli obiettivi per farle scendere a zero.</li>
       </ul>
-      <button id="btn-howto-back" class="big-btn">Indietro</button>
+      <button id="btn-howto-back" class="big-btn" data-i18n="Indietro">Indietro</button>
     </div>
   </div>
 
@@ -244,7 +245,7 @@
   <div id="screen-creator" class="overlay hidden">
     <div class="creator-layout">
       <div class="creator-left">
-        <h2>Crea il tuo personaggio</h2>
+        <h2 data-i18n="Crea il tuo personaggio">Crea il tuo personaggio</h2>
 
         <div class="ctl-group">
           <label>Specie</label>
@@ -271,8 +272,8 @@
           <input id="ctl-name" class="text-input" maxlength="16" placeholder="Il tuo nome" />
         </div>
 
-        <button id="btn-to-dimension" class="big-btn">Conferma →</button>
-        <button id="btn-creator-back" class="ghost-btn">Indietro</button>
+        <button id="btn-to-dimension" class="big-btn" data-i18n="Conferma →">Conferma →</button>
+        <button id="btn-creator-back" class="ghost-btn" data-i18n="Indietro">Indietro</button>
       </div>
       <div class="creator-right">
         <div class="preview-hint">Anteprima 3D · trascina per ruotare</div>
@@ -283,17 +284,17 @@
   <!-- ===================== SELEZIONE DIMENSIONE ===================== -->
   <div id="screen-dimension" class="overlay hidden">
     <div class="panel wide">
-      <h2>Scegli la dimensione di partenza</h2>
+      <h2 data-i18n="Scegli la dimensione di partenza">Scegli la dimensione di partenza</h2>
       <p class="muted">Potrai viaggiare tra i mondi attraverso i portali.</p>
       <div class="dim-cards" id="dim-cards"></div>
-      <button id="btn-dimension-back" class="ghost-btn">Indietro</button>
+      <button id="btn-dimension-back" class="ghost-btn" data-i18n="Indietro">Indietro</button>
     </div>
   </div>
 
   <!-- ===================== MULTIPLAYER ===================== -->
   <div id="screen-multiplayer" class="overlay hidden">
     <div class="panel">
-      <h2>🌐 Multiplayer</h2>
+      <h2 data-i18n="🌐 Multiplayer">🌐 Multiplayer</h2>
       <p class="muted">Gioca insieme ad altri: vi vedrete muovere e potrete chattare
         nella stessa dimensione, in tempo reale.</p>
       <div class="mp-field">
@@ -305,9 +306,9 @@
         <input id="mp-url" class="text-input" placeholder="ws://localhost:8090" />
       </div>
       <div class="mp-status" id="mp-status">Non connesso</div>
-      <button id="btn-mp-connect" class="big-btn">Connetti</button>
-      <button id="btn-mp-disconnect" class="ghost-btn hidden">Disconnetti</button>
-      <button id="btn-mp-back" class="ghost-btn">Indietro</button>
+      <button id="btn-mp-connect" class="big-btn" data-i18n="Connetti">Connetti</button>
+      <button id="btn-mp-disconnect" class="ghost-btn hidden" data-i18n="Disconnetti">Disconnetti</button>
+      <button id="btn-mp-back" class="ghost-btn" data-i18n="Indietro">Indietro</button>
       <p class="muted mp-hint">Serve un server in ascolto: <code>npm install &amp;&amp; node server.js</code>.
         Gli amici usano lo stesso indirizzo (o il tuo IP pubblico).</p>
     </div>
@@ -316,7 +317,7 @@
   <!-- ===================== IMPOSTAZIONI ===================== -->
   <div id="screen-settings" class="overlay hidden">
     <div class="panel">
-      <h2>⚙️ Impostazioni</h2>
+      <h2 data-i18n="⚙️ Impostazioni">⚙️ Impostazioni</h2>
       <div class="setting-row">
         <label for="set-volume">🔊 Volume</label>
         <input type="range" id="set-volume" min="0" max="100" value="50" />
@@ -331,14 +332,14 @@
         <label for="set-effects">✨ Effetti ridotti (prestazioni)</label>
         <input type="checkbox" id="set-effects" />
       </div>
-      <button id="btn-settings-back" class="big-btn">Indietro</button>
+      <button id="btn-settings-back" class="big-btn" data-i18n="Indietro">Indietro</button>
     </div>
   </div>
 
   <!-- ===================== CLASSIFICA ===================== -->
   <div id="screen-leaderboard" class="overlay hidden">
     <div class="panel">
-      <h2>📊 Classifica</h2>
+      <h2 data-i18n="📊 Classifica">📊 Classifica</h2>
       <p class="muted">I tuoi migliori risultati. Batti il tuo record!</p>
       <div class="lb-filters" id="lb-filters">
         <button class="lb-tab active" data-lbfilter="all">Tutte</button>
@@ -346,14 +347,14 @@
         <button class="lb-tab" data-lbfilter="survival">🌊 Sopravvivenza</button>
       </div>
       <div class="lb-list" id="lb-list"></div>
-      <button id="btn-lb-back" class="big-btn">Indietro</button>
+      <button id="btn-lb-back" class="big-btn" data-i18n="Indietro">Indietro</button>
     </div>
   </div>
 
   <!-- ===================== MORTE ===================== -->
   <div id="screen-death" class="overlay hidden">
     <div class="panel center">
-      <h2 class="danger">SEI CADUTO</h2>
+      <h2 class="danger" data-i18n="SEI CADUTO">SEI CADUTO</h2>
       <p id="death-text">I mondi vacillano... ma non è finita.</p>
       <p class="big-number" id="death-bignum">+100 <span class="muted">sfide</span></p>
       <p class="muted" id="death-remain">Sfide rimanenti: <b id="death-challenges">1100</b></p>
@@ -364,12 +365,12 @@
   <!-- ===================== VITTORIA ===================== -->
   <div id="screen-victory" class="overlay hidden">
     <div class="panel center">
-      <h2 class="glow">HAI SALVATO I MONDI</h2>
+      <h2 class="glow" data-i18n="HAI SALVATO I MONDI">HAI SALVATO I MONDI</h2>
       <p id="victory-text"></p>
       <canvas id="share-card" width="600" height="315" class="share-card"></canvas>
       <div class="victory-row">
-        <button id="btn-share" class="big-btn">📸 Scarica la card</button>
-        <button id="btn-restart" class="ghost-btn">Gioca ancora</button>
+        <button id="btn-share" class="big-btn" data-i18n="📸 Scarica la card">📸 Scarica la card</button>
+        <button id="btn-restart" class="ghost-btn" data-i18n="Gioca ancora">Gioca ancora</button>
       </div>
     </div>
   </div>
@@ -377,8 +378,8 @@
   <!-- ===================== PAUSA ===================== -->
   <div id="screen-pause" class="overlay hidden">
     <div class="panel center">
-      <h2>Pausa</h2>
-      <button id="btn-resume" class="big-btn">Riprendi</button>
+      <h2 data-i18n="Pausa">Pausa</h2>
+      <button id="btn-resume" class="big-btn" data-i18n="Riprendi">Riprendi</button>
       <button id="btn-quit" class="ghost-btn">Torna al titolo</button>
     </div>
   </div>
