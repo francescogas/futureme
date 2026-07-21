@@ -382,11 +382,18 @@ export function buildDimension(dimId, level) {
     buildSun(root, objects, SIZE, level);
   }
 
-  // Suolo
-  const ground = new THREE.Mesh(new THREE.CircleGeometry(SIZE, 48), stdMat(groundColor, { rough: 1 }));
+  // Suolo con texture procedurale (griglia/strade → profondità e non "piatto")
+  const gMat = new THREE.MeshStandardMaterial({
+    color: groundColor, roughness: 1, metalness: 0,
+    map: groundTexture(dimId, groundColor),
+  });
+  const ground = new THREE.Mesh(new THREE.CircleGeometry(SIZE, 64), gMat);
   ground.rotation.x = -Math.PI / 2;
   ground.receiveShadow = true;
   root.add(ground);
+
+  // Skyline di sfondo: torri alte verso il bordo, per dare profondità 3D
+  if (dimId === "earth") addSkylineRing(root, SIZE, city, theme.night);
 
   // Bordo del mondo
   const rim = new THREE.Mesh(
@@ -404,6 +411,89 @@ export function buildDimension(dimId, level) {
 // ------------------------------------------------------------
 function winMat(color = 0xffe9a0, op = 0.85) {
   return new THREE.MeshBasicMaterial({ color, transparent: true, opacity: op });
+}
+
+// Texture procedurale del suolo: griglia di strade (Terra), crateri (Luna),
+// dune sabbiose (Sole). Dà profondità ed evita il pavimento "piatto".
+function groundTexture(dimId, baseColor) {
+  const S = 512;
+  const c = document.createElement("canvas"); c.width = c.height = S;
+  const g = c.getContext("2d");
+  const hex = "#" + (baseColor >>> 0).toString(16).padStart(6, "0").slice(-6);
+  g.fillStyle = hex; g.fillRect(0, 0, S, S);
+  let repeat = 6;
+  if (dimId === "earth") {
+    // isolati con strade più scure e marciapiedi chiari
+    const tiles = 4, step = S / tiles, road = 26;
+    g.fillStyle = "rgba(0,0,0,0.28)";
+    for (let i = 0; i < tiles; i++) {
+      g.fillRect(i * step + step / 2 - road / 2, 0, road, S);
+      g.fillRect(0, i * step + step / 2 - road / 2, S, road);
+    }
+    g.strokeStyle = "rgba(255,255,255,0.35)"; g.lineWidth = 2;
+    g.setLineDash([10, 12]);
+    for (let i = 0; i < tiles; i++) {
+      g.beginPath(); g.moveTo(i * step + step / 2, 0); g.lineTo(i * step + step / 2, S); g.stroke();
+      g.beginPath(); g.moveTo(0, i * step + step / 2); g.lineTo(S, i * step + step / 2); g.stroke();
+    }
+    g.setLineDash([]);
+    repeat = 5;
+  } else if (dimId === "moon") {
+    // crateri
+    for (let i = 0; i < 40; i++) {
+      const x = Math.random() * S, y = Math.random() * S, r = 6 + Math.random() * 28;
+      g.beginPath(); g.arc(x, y, r, 0, Math.PI * 2);
+      g.fillStyle = "rgba(0,0,0,0.22)"; g.fill();
+      g.beginPath(); g.arc(x - r * 0.2, y - r * 0.2, r * 0.7, 0, Math.PI * 2);
+      g.fillStyle = "rgba(255,255,255,0.06)"; g.fill();
+    }
+    repeat = 4;
+  } else {
+    // dune sabbiose: bande morbide
+    for (let i = 0; i < 60; i++) {
+      g.strokeStyle = `rgba(180,140,60,${0.05 + Math.random() * 0.08})`;
+      g.lineWidth = 2 + Math.random() * 5;
+      g.beginPath();
+      const y = Math.random() * S;
+      g.moveTo(0, y); g.bezierCurveTo(S * 0.3, y + 20, S * 0.6, y - 20, S, y + 10); g.stroke();
+    }
+    repeat = 5;
+  }
+  // grana leggera comune
+  for (let i = 0; i < 1400; i++) {
+    g.fillStyle = `rgba(255,255,255,${Math.random() * 0.045})`;
+    g.fillRect(Math.random() * S, Math.random() * S, 2, 2);
+  }
+  const tex = new THREE.CanvasTexture(c);
+  tex.wrapS = tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(repeat, repeat);
+  tex.anisotropy = 4;
+  return tex;
+}
+
+// Anello di torri alte verso il bordo: crea uno skyline e senso di profondità.
+function addSkylineRing(root, SIZE, city, night) {
+  const base = (city && city.building) || 0x6a7488;
+  const N = 46;
+  for (let i = 0; i < N; i++) {
+    const a = (i / N) * Math.PI * 2 + rand(-0.05, 0.05);
+    const r = SIZE - rand(1, 6);
+    const x = Math.cos(a) * r, z = Math.sin(a) * r;
+    const w = rand(2.4, 4.2), h = rand(10, 26), d = rand(2.4, 4.2);
+    const shade = new THREE.Color(base).multiplyScalar(rand(0.7, 1.05));
+    const b = new THREE.Mesh(new THREE.BoxGeometry(w, h, d),
+      stdMat(shade.getHex(), { rough: 0.9, emissive: night ? 0x111a33 : 0x000000, ei: night ? 0.25 : 0 }));
+    b.position.set(x, h / 2, z);
+    b.castShadow = false; b.receiveShadow = false;
+    root.add(b);
+    // qualche finestra accesa di notte (economico: pochi piani)
+    if (night && Math.random() < 0.8) {
+      const lit = new THREE.Mesh(new THREE.PlaneGeometry(w * 0.7, h * 0.8),
+        winMat(0xffe9a0, 0.5));
+      lit.position.set(x, h * 0.5, z + d / 2 + 0.03);
+      root.add(lit);
+    }
+  }
 }
 
 // Edificio con file di finestre (di notte diventano neon)
