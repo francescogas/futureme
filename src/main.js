@@ -16,6 +16,19 @@ const audio = new AudioManager();
 let touchUI = null;
 let selectedDaily = null; // sfida del giorno scelta per la prossima partita
 
+// ---------- Impostazioni persistenti ----------
+const SETTINGS_KEY = "futureme_settings_v1";
+const settings = loadSettings();
+function loadSettings() {
+  const def = { volume: 50, sensitivity: 100, lowEffects: false };
+  try { return { ...def, ...JSON.parse(localStorage.getItem(SETTINGS_KEY) || "{}") }; } catch (e) { return def; }
+}
+function saveSettings() { try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(settings)); } catch (e) {} }
+function applySettings() {
+  audio.setMasterVolume(settings.volume / 100);
+  if (game) { game.setSensitivity(settings.sensitivity / 100); game.setLowEffects(settings.lowEffects); }
+}
+
 // Storia raccontata nell'intro cinematografica
 const STORY = [
   `Un tempo i tre mondi — <span class="accent">Terra</span>, <span class="accent">Luna</span> e <span class="sun">Sole</span> — vivevano in perfetto equilibrio, uniti da portali silenziosi.`,
@@ -226,7 +239,7 @@ function buildDimensionCards() {
 // ============================================================
 //  Gestione schermate
 // ============================================================
-const SCREENS = ["screen-title", "screen-intro", "screen-howto", "screen-creator", "screen-dimension", "screen-death", "screen-victory", "screen-pause", "screen-shop", "screen-achievements", "screen-leaderboard"];
+const SCREENS = ["screen-title", "screen-intro", "screen-howto", "screen-creator", "screen-dimension", "screen-death", "screen-victory", "screen-pause", "screen-shop", "screen-achievements", "screen-leaderboard", "screen-settings"];
 function showScreen(id) {
   SCREENS.forEach((s) => UI.hide(s));
   if (id) UI.show(id);
@@ -251,6 +264,7 @@ function ensureGame() {
     touchUI = setupTouch(game);
     window.__futuremeGame = game; // hook per debug/test
   }
+  applySettings();
   if (touchUI) { isTouchDevice() ? touchUI.show() : touchUI.hide(); }
 }
 
@@ -397,6 +411,17 @@ function buildAchievements() {
     card.innerHTML = `<div class="ac-icon">${unlocked ? a.icon : "🔒"}</div><div><div class="ac-name">${a.name}</div><div class="ac-desc">${a.desc}</div></div>`;
     grid.appendChild(card);
   }
+}
+
+// ---------- Impostazioni ----------
+function setupSettingsControls() {
+  const vol = $("set-volume"), sens = $("set-sens"), eff = $("set-effects");
+  vol.value = settings.volume; $("set-volume-val").textContent = settings.volume + "%";
+  sens.value = settings.sensitivity; $("set-sens-val").textContent = (settings.sensitivity / 100).toFixed(1) + "×";
+  eff.checked = settings.lowEffects;
+  vol.oninput = () => { settings.volume = +vol.value; $("set-volume-val").textContent = settings.volume + "%"; audio.init(); applySettings(); saveSettings(); };
+  sens.oninput = () => { settings.sensitivity = +sens.value; $("set-sens-val").textContent = (settings.sensitivity / 100).toFixed(1) + "×"; applySettings(); saveSettings(); };
+  eff.onchange = () => { settings.lowEffects = eff.checked; applySettings(); saveSettings(); };
 }
 
 // ---------- Sfida del Giorno (banner titolo) ----------
@@ -557,9 +582,12 @@ function init() {
   $("btn-ach-back").onclick = () => showScreen("screen-title");
   $("btn-leaderboard").onclick = () => { buildLeaderboard(); showScreen("screen-leaderboard"); };
   $("btn-lb-back").onclick = () => showScreen("screen-title");
+  $("btn-settings").onclick = () => { setupSettingsControls(); showScreen("screen-settings"); };
+  $("btn-settings-back").onclick = () => showScreen("screen-title");
   $("btn-share").onclick = () => downloadShareCard();
 
   // mostra "Continua" se esiste un salvataggio
+  applySettings();
   refreshContinueButton();
   refreshTitleBar();
   refreshDaily();

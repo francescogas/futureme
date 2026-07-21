@@ -31,6 +31,9 @@ In alternativa qualsiasi server statico (`npx serve`, estensione "Live Server" d
 | **Esc** | Pausa |
 | **🔊 (in alto a destra)** | Attiva/disattiva l'audio |
 
+Volume, sensibilità della telecamera ed effetti grafici sono regolabili in
+**⚙️ Impostazioni** dal menu principale.
+
 Su **smartphone/tablet** compaiono automaticamente un **joystick** (in basso a
 sinistra) per muoverti e un pulsante **E** per interagire; trascina sul resto
 dello schermo per ruotare la telecamera.
@@ -50,8 +53,13 @@ dello schermo per ruotare la telecamera.
   Maestro Combo, Notte dell'Orda, Sprint Dimensionale, Eclissi (nebbia ovunque) —
   un **obiettivo** da centrare e una **ricompensa** in monete. Banner dedicato
   sul titolo.
-- **Due boss diversi**: oltre al Guardiano della Luna può comparire il
-  **Signore dei Vampiri** (più veloce, si teletrasporta vicino a te), per varietà.
+- **Due boss diversi con attacchi speciali**: il **Guardiano della Luna** scatena
+  **onde d'urto** che si espandono e vanno schivate; il **Signore dei Vampiri** si
+  teletrasporta e **evoca sciami di pipistrelli**. Fasi di battaglia epiche.
+- **Nemici volanti**: sciami di **pipistrelli** sorvolano la Luna, ondeggiano in
+  quota e picchiano in picchiata sul giocatore.
+- **Menu Impostazioni**: volume, sensibilità della telecamera ed "effetti ridotti"
+  (per dispositivi meno potenti), salvati tra le sessioni.
 - **Ricompensa giornaliera** con **serie di accessi** (streak) che cresce ogni
   giorno — il classico hook di ritorno.
 - **Record personali** e statistiche mostrati sul titolo (morti minime, sfide

@@ -150,6 +150,39 @@ export function makeMonster(kind, x, z, elite = false) {
   return g;
 }
 
+// ---------- Nemico volante: pipistrello ----------
+export function makeBat(x, z, elite = false) {
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.SphereGeometry(0.22, 10, 10), stdMat(0x1a1420, { rough: 0.7 }));
+  body.scale.set(1, 0.9, 1.3); g.add(body);
+  // occhi rossi
+  for (const sx of [-1, 1]) {
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.05, 6, 6), new THREE.MeshBasicMaterial({ color: 0xff3020 }));
+    eye.position.set(sx * 0.08, 0.05, 0.2); g.add(eye);
+  }
+  // orecchie
+  for (const sx of [-1, 1]) {
+    const ear = new THREE.Mesh(new THREE.ConeGeometry(0.06, 0.14, 4), stdMat(0x1a1420));
+    ear.position.set(sx * 0.09, 0.24, 0); g.add(ear);
+  }
+  // ali
+  const wings = [];
+  for (const sx of [-1, 1]) {
+    const pivot = new THREE.Group();
+    pivot.position.set(sx * 0.16, 0, 0);
+    const wing = new THREE.Mesh(new THREE.PlaneGeometry(0.5, 0.34), stdMat(0x2a1020, { rough: 0.6 }));
+    wing.material.side = THREE.DoubleSide;
+    wing.position.x = sx * 0.28; wing.rotation.y = sx * 0.2;
+    pivot.add(wing); g.add(pivot); wings.push({ pivot, sx });
+  }
+  if (elite) { g.scale.setScalar(1.4); g.add(new THREE.PointLight(0xff2020, 0.5, 5)); }
+  const hover = rand(2.2, 3.4);
+  g.position.set(x, hover, z);
+  g.userData = { kind: "monster", type: "bat", flying: true, hover, wings, speed: elite ? rand(3.2, 4.2) : rand(2.4, 3.4), baseY: hover, hp: 1, elite };
+  g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+  return g;
+}
+
 // ---------- Boss finale (Luna) ----------
 export function makeBoss(x, z, variant = "guardian") {
   if (variant === "vampire") return makeVampireLord(x, z);
@@ -178,7 +211,7 @@ export function makeBoss(x, z, variant = "guardian") {
   const light = new THREE.PointLight(0xff2060, 1.2, 12);
   light.position.y = 2.5; g.add(light);
   g.position.set(x, 0, z);
-  g.userData = { kind: "boss", variant: "guardian", name: "GUARDIANO DELLA LUNA", hp: 6, maxHp: 6, speed: 1.9, baseY: 0 };
+  g.userData = { kind: "boss", variant: "guardian", name: "GUARDIANO DELLA LUNA", hp: 6, maxHp: 6, speed: 1.9, baseY: 0, attackTimer: 4 };
   g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
   return g;
 }
@@ -212,7 +245,7 @@ function makeVampireLord(x, z) {
   const light = new THREE.PointLight(0xff1040, 1.4, 14);
   light.position.y = 2.5; g.add(light);
   g.position.set(x, 0, z);
-  g.userData = { kind: "boss", variant: "vampire", name: "SIGNORE DEI VAMPIRI", hp: 7, maxHp: 7, speed: 2.6, baseY: 0, teleTimer: 3 };
+  g.userData = { kind: "boss", variant: "vampire", name: "SIGNORE DEI VAMPIRI", hp: 7, maxHp: 7, speed: 2.6, baseY: 0, teleTimer: 3, summonTimer: 5 };
   g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
   return g;
 }

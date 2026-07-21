@@ -12,6 +12,7 @@ export class AudioManager {
     this.enabled = false;
     this.currentDim = null;
     this._weatherType = null;
+    this.userVolume = 0.5; // 0..1 (moltiplicato internamente)
   }
 
   // Va chiamato da un gesto utente (autoplay policy)
@@ -21,16 +22,21 @@ export class AudioManager {
     if (!AC) return;
     this.ctx = new AC();
     this.master = this.ctx.createGain();
-    this.master.gain.value = this.muted ? 0 : 0.5;
+    this.master.gain.value = this.muted ? 0 : this.userVolume;
     this.master.connect(this.ctx.destination);
     this.enabled = true;
   }
 
   resume() { if (this.ctx && this.ctx.state === "suspended") this.ctx.resume(); }
 
+  setMasterVolume(v) {
+    this.userVolume = Math.max(0, Math.min(1, v));
+    if (this.master && !this.muted) this.master.gain.setTargetAtTime(this.userVolume, this.ctx.currentTime, 0.05);
+  }
+
   setMuted(m) {
     this.muted = m;
-    if (this.master) this.master.gain.setTargetAtTime(m ? 0 : 0.5, this.ctx.currentTime, 0.05);
+    if (this.master) this.master.gain.setTargetAtTime(m ? 0 : this.userVolume, this.ctx.currentTime, 0.05);
   }
   toggleMute() { this.setMuted(!this.muted); return this.muted; }
 

@@ -5,7 +5,7 @@ import * as THREE from "three";
 import { buildAvatar, animateAvatar } from "./character.js";
 import {
   buildDimension, makeItem, makePortal, makeNPC, makeMonster,
-  makeAlterEgo, makeBoss, makePowerup, animateWorldObjects,
+  makeAlterEgo, makeBoss, makeBat, makePowerup, animateWorldObjects,
 } from "./world.js";
 import { DIMENSIONS, POTION_RECIPE, NPC_LINES, CITY_NPCS, ITEMS, REWARDS, POWERUPS } from "./data.js";
 import { Minimap } from "./minimap.js";
@@ -33,6 +33,9 @@ export class Game {
     this.touchMove = { x: 0, z: 0 };
     this.shake = 0;
     this.bursts = [];
+    this.shockwaves = [];
+    this.sensitivity = 1;
+    this.lowEffects = false;
     this.combo = 0;
     this.comboTimer = 0;
     this.trailTimer = 0;
@@ -74,8 +77,8 @@ export class Game {
       if (!this.dragging) return;
       const dx = e.clientX - this._lastX, dy = e.clientY - this._lastY;
       this._lastX = e.clientX; this._lastY = e.clientY;
-      this.yaw -= dx * 0.005;
-      this.pitch = Math.max(0.05, Math.min(1.1, this.pitch + dy * 0.004));
+      this.yaw -= dx * 0.005 * this.sensitivity;
+      this.pitch = Math.max(0.05, Math.min(1.1, this.pitch + dy * 0.004 * this.sensitivity));
     });
   }
 
@@ -130,6 +133,7 @@ export class Game {
     this.alterBeam = null;
     this.boss = null;
     this.weather = null;
+    this.shockwaves = [];
     UI.setBossHP(null);
 
     this.state.dim = dimId;
@@ -349,6 +353,12 @@ export class Game {
         const m = spawnAt((x, z) => makeMonster(pick(types), x, z, elite));
         this._addMonster(m);
       }
+      // pipistrelli volanti
+      const nBats = 2 + Math.floor(level / 2);
+      for (let i = 0; i < nBats; i++) {
+        const b = spawnAt((x, z) => makeBat(x, z, i < nElite));
+        this._addMonster(b);
+      }
       for (let i = 0; i < 1; i++) { const n = spawnAt((x, z) => makeNPC(x, z, 0x9060ff)); this._addNPC(n); }
       spawnPowerups(3);
       // il tuo io prigioniero (evil)
@@ -418,6 +428,14 @@ export class Game {
   // ---------- API pubbliche per i controlli touch ----------
   setTouchMove(x, z) { this.touchMove.x = x; this.touchMove.z = z; }
   interact() { if (this.running) this._tryInteract(); }
+
+  // ---------- Impostazioni ----------
+  setSensitivity(v) { this.sensitivity = v; }
+  setLowEffects(b) {
+    this.lowEffects = b;
+    this.renderer.setPixelRatio(b ? 1 : Math.min(window.devicePixelRatio, 2));
+    this.renderer.shadowMap.enabled = !b;
+  }
 
   // ---------- Interazione (tasto E) ----------
   _tryInteract() {
@@ -795,6 +813,7 @@ export class Game {
     animateWorldObjects(this.objects, t, dt);
     if (this.weather) this.weather.update(dt, t);
     if (this.bursts.length) this._updateBursts(dt);
+    if (this.shockwaves.length) this._updateShockwaves(dt);
     if (this.alterBeam) this.alterBeam.material.opacity = 0.2 + Math.sin(t * 3) * 0.12;
     this.minimap.render(this);
 
@@ -899,6 +918,7 @@ export class Game {
     const rangeMul = this.weather ? this.weather.mods.monsterRangeMul : 1;
     const sight = 22 * rangeMul;
     const frozen = this.powerups.freeze > 0;
+    const et = this.clock.elapsedTime;
     for (const m of this.objects.monsters) {
       const dx = px - m.position.x, dz = pz - m.position.z;
       const d = Math.hypot(dx, dz);
@@ -907,8 +927,16 @@ export class Game {
         m.position.z += (dz / d) * m.userData.speed * dt;
         m.rotation.y = Math.atan2(dx, dz);
       }
-      m.position.y = frozen ? 0 : Math.abs(Math.sin(this.clock.elapsedTime * 6 + m.position.x)) * 0.15;
-      if (!frozen && d < 1.3) this._damage(1);
+      if (m.userData.flying) {
+        // volo: quota ondeggiante, picchiata quando è vicino
+        const dive = d < 4 ? -1.4 : 0;
+        m.position.y = frozen ? m.userData.hover : m.userData.hover + Math.sin(et * 3 + m.position.x) * 0.4 + dive;
+        if (m.userData.wings) for (const w of m.userData.wings) w.pivot.rotation.z = w.sx * Math.sin(et * 14) * 0.7;
+        if (!frozen && d < 1.6 && m.position.y < 2.2) this._damage(1);
+      } else {
+        m.position.y = frozen ? 0 : Math.abs(Math.sin(et * 6 + m.position.x)) * 0.15;
+        if (!frozen && d < 1.3) this._damage(1);
+      }
     }
     // Boss: insegue e colpisce più forte
     if (this.boss) {
@@ -926,6 +954,30 @@ export class Game {
       }
       const dx = px - this.boss.position.x, dz = pz - this.boss.position.z;
       const d = Math.hypot(dx, dz);
+      // ---- Attacchi speciali (fase epica quando sei vicino) ----
+      if (!frozen && d < 24) {
+        if (this.boss.userData.variant === "guardian") {
+          this.boss.userData.attackTimer -= dt;
+          if (this.boss.userData.attackTimer <= 0) {
+            this.boss.userData.attackTimer = rand(5, 7);
+            this.boss.position.y = 0.6; // affondo
+            this.shake = 0.5;
+            this._spawnShockwave(this.boss.position.x, this.boss.position.z, 0xff3366);
+            UI.hint("💥 Onda d'urto! Allontanati!");
+          }
+        } else if (this.boss.userData.variant === "vampire") {
+          this.boss.userData.summonTimer -= dt;
+          if (this.boss.userData.summonTimer <= 0) {
+            this.boss.userData.summonTimer = rand(5, 7);
+            for (let i = 0; i < 2; i++) {
+              const bat = makeBat(this.boss.position.x + rand(-2, 2), this.boss.position.z + rand(-2, 2));
+              this._addMonster(bat);
+            }
+            this._spawnBurst(this.boss.position.x, 2.5, this.boss.position.z, 0xff1040, 16);
+            UI.hint("🦇 Il Vampiro evoca pipistrelli!");
+          }
+        }
+      }
       if (!frozen && d < 30 && d > 0.01) {
         this.boss.position.x += (dx / d) * this.boss.userData.speed * dt;
         this.boss.position.z += (dz / d) * this.boss.userData.speed * dt;
@@ -945,6 +997,7 @@ export class Game {
 
   // ---------- Burst di scintille (feedback raccolta/eventi) ----------
   _spawnBurst(x, y, z, color, count = 14) {
+    if (this.lowEffects) count = Math.max(4, Math.ceil(count / 3));
     const geo = new THREE.BufferGeometry();
     const pos = new Float32Array(count * 3);
     const vel = [];
@@ -958,6 +1011,37 @@ export class Game {
     pts.frustumCulled = false;
     this.worldRoot.add(pts);
     this.bursts.push({ pts, vel, life: 0, max: 0.7 });
+  }
+
+  // Onda d'urto del boss (da schivare)
+  _spawnShockwave(x, z, color) {
+    const ring = new THREE.Mesh(
+      new THREE.RingGeometry(0.6, 1.1, 40),
+      new THREE.MeshBasicMaterial({ color, transparent: true, opacity: 0.7, side: THREE.DoubleSide })
+    );
+    ring.rotation.x = -Math.PI / 2;
+    ring.position.set(x, 0.15, z);
+    this.worldRoot.add(ring);
+    this.shockwaves.push({ ring, r: 1, hit: false, x, z });
+  }
+
+  _updateShockwaves(dt) {
+    const px = this.player.position.x, pz = this.player.position.z;
+    for (let i = this.shockwaves.length - 1; i >= 0; i--) {
+      const s = this.shockwaves[i];
+      s.r += 16 * dt;
+      s.ring.scale.setScalar(s.r);
+      s.ring.material.opacity = Math.max(0, 0.7 - s.r / 24);
+      // colpisce se il giocatore è sul fronte dell'onda ed è a terra
+      if (!s.hit) {
+        const d = Math.hypot(px - s.x, pz - s.z);
+        if (Math.abs(d - s.r) < 1.4 && this.player.position.y < 1) {
+          s.hit = true;
+          this._damage(1);
+        }
+      }
+      if (s.r > 22) { this.worldRoot.remove(s.ring); this.shockwaves.splice(i, 1); }
+    }
   }
 
   _emitTrail(color) {
