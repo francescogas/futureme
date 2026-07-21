@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>FUTUREME — Le Tre Dimensioni</title>
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%8C%8C%3C/text%3E%3C/svg%3E" />
+  <link rel="stylesheet" href="./styles.css" />
+  <script type="importmap">
+  {
+    "imports": {
+      "three": "./vendor/three/three.module.js"
+    }
+  }
+  </script>
+</head>
+<body>
+  <canvas id="scene"></canvas>
+
+  <!-- ===================== HUD (in-game) ===================== -->
+  <div id="hud" class="hidden">
+    <div class="hud-top">
+      <div class="hud-panel">
+        <div class="hud-dim"><span id="hud-dim-icon">🌍</span> <span id="hud-dim-name">TERRA</span></div>
+        <div class="hud-city" id="hud-city">Roma</div>
+      </div>
+      <div class="hud-panel hud-center">
+        <div class="hud-stat"><span class="lbl">SFIDE RIMANENTI</span><span class="val" id="hud-challenges">1000</span></div>
+        <div class="hud-stat small"><span class="lbl">LIVELLO</span><span class="val" id="hud-level">1</span></div>
+      </div>
+      <div class="hud-panel hud-right">
+        <div class="hud-hearts" id="hud-hearts"></div>
+        <div class="hud-stat small"><span class="lbl">MORTI</span><span class="val" id="hud-deaths">0</span></div>
+      </div>
+    </div>
+
+    <div class="hud-inventory" id="hud-inventory"></div>
+
+    <div class="hud-objective" id="hud-objective">Obiettivo: esplora e raccogli chiavi e passaporti.</div>
+
+    <div class="hud-hint" id="hud-hint"></div>
+
+    <button id="btn-pause" class="corner-btn" title="Pausa">⏸</button>
+  </div>
+
+  <!-- ===================== Toast / messaggi ===================== -->
+  <div id="toast" class="hidden"></div>
+
+  <!-- ===================== Dialogo NPC ===================== -->
+  <div id="dialog" class="overlay hidden">
+    <div class="dialog-box">
+      <div class="dialog-speaker" id="dialog-speaker">Sconosciuto</div>
+      <div class="dialog-text" id="dialog-text"></div>
+      <div class="dialog-actions" id="dialog-actions"></div>
+    </div>
+  </div>
+
+  <!-- ===================== TITOLO ===================== -->
+  <div id="screen-title" class="overlay">
+    <div class="title-wrap">
+      <h1 class="game-logo">FUTURE<span>ME</span></h1>
+      <p class="tagline">Le Tre Dimensioni · Terra · Luna · Sole</p>
+      <p class="subtitle">Trova il tuo io negli altri mondi. Salva la realtà dall'implosione.</p>
+      <button id="btn-start" class="big-btn">▶ INIZIA L'AVVENTURA</button>
+      <button id="btn-howto" class="ghost-btn">Come si gioca</button>
+      <div class="credits">Un prototipo giocabile — muoviti con <b>WASD</b> / frecce · <b>Mouse</b> per guardare</div>
+    </div>
+  </div>
+
+  <!-- ===================== COME SI GIOCA ===================== -->
+  <div id="screen-howto" class="overlay hidden">
+    <div class="panel">
+      <h2>Come si gioca</h2>
+      <ul class="howto-list">
+        <li><b>WASD / Frecce</b> — muoviti nel mondo 3D</li>
+        <li><b>Mouse</b> — ruota la telecamera · <b>Shift</b> — corri</li>
+        <li><b>E / Spazio</b> — interagisci con persone e portali</li>
+        <li><b>🔑 Chiavi & 🛂 Passaporti</b> — sbloccano portali misteriosi. Non saprai dove ti porteranno!</li>
+        <li><b>🌍 Terra</b> — cammina fra le città del mondo, raccogli indizi.</li>
+        <li><b>🌙 Luna</b> — sempre notte. Zombie, vampiri e lupi mannari. Difenditi con 🧄 aglio, ✝️ croci, ⚙️ argento e 🔦 torce. Chiudi i portali prima che i mostri raggiungano la Terra.</li>
+        <li><b>☀️ Sole</b> — sempre giorno. Raccogli gli ingredienti della <b>pozione magica</b>.</li>
+        <li><b>Il tuo Io parallelo</b> — potresti incontrarlo. Sulla Luna è prigioniero e forse è diventato cattivo. Solo la pozione può salvarlo e portarlo nella dimensione Sole.</li>
+        <li><b>Sfide</b> — parti da 1000 sfide. Ogni volta che muori aumentano di 100. Completa gli obiettivi per farle scendere a zero.</li>
+      </ul>
+      <button id="btn-howto-back" class="big-btn">Indietro</button>
+    </div>
+  </div>
+
+  <!-- ===================== CREATORE PERSONAGGIO ===================== -->
+  <div id="screen-creator" class="overlay hidden">
+    <div class="creator-layout">
+      <div class="creator-left">
+        <h2>Crea il tuo personaggio</h2>
+
+        <div class="ctl-group">
+          <label>Specie</label>
+          <div class="chip-row" id="ctl-species"></div>
+        </div>
+
+        <div class="ctl-group">
+          <label>Sesso</label>
+          <div class="chip-row" id="ctl-sex"></div>
+        </div>
+
+        <div class="ctl-group">
+          <label>Stile di abiti</label>
+          <div class="chip-row wrap" id="ctl-outfit"></div>
+        </div>
+
+        <div class="ctl-group">
+          <label>Colore principale</label>
+          <div class="chip-row" id="ctl-color"></div>
+        </div>
+
+        <div class="ctl-group">
+          <label>Nome</label>
+          <input id="ctl-name" class="text-input" maxlength="16" placeholder="Il tuo nome" />
+        </div>
+
+        <button id="btn-to-dimension" class="big-btn">Conferma →</button>
+        <button id="btn-creator-back" class="ghost-btn">Indietro</button>
+      </div>
+      <div class="creator-right">
+        <div class="preview-hint">Anteprima 3D · trascina per ruotare</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== SELEZIONE DIMENSIONE ===================== -->
+  <div id="screen-dimension" class="overlay hidden">
+    <div class="panel wide">
+      <h2>Scegli la dimensione di partenza</h2>
+      <p class="muted">Potrai viaggiare tra i mondi attraverso i portali.</p>
+      <div class="dim-cards" id="dim-cards"></div>
+      <button id="btn-dimension-back" class="ghost-btn">Indietro</button>
+    </div>
+  </div>
+
+  <!-- ===================== MORTE ===================== -->
+  <div id="screen-death" class="overlay hidden">
+    <div class="panel center">
+      <h2 class="danger">SEI CADUTO</h2>
+      <p id="death-text">I mondi vacillano... ma non è finita.</p>
+      <p class="big-number">+100 <span class="muted">sfide</span></p>
+      <p class="muted">Sfide rimanenti: <b id="death-challenges">1100</b></p>
+      <button id="btn-respawn" class="big-btn">Rialzati</button>
+    </div>
+  </div>
+
+  <!-- ===================== VITTORIA ===================== -->
+  <div id="screen-victory" class="overlay hidden">
+    <div class="panel center">
+      <h2 class="glow">HAI SALVATO I MONDI</h2>
+      <p id="victory-text"></p>
+      <button id="btn-restart" class="big-btn">Gioca ancora</button>
+    </div>
+  </div>
+
+  <!-- ===================== PAUSA ===================== -->
+  <div id="screen-pause" class="overlay hidden">
+    <div class="panel center">
+      <h2>Pausa</h2>
+      <button id="btn-resume" class="big-btn">Riprendi</button>
+      <button id="btn-quit" class="ghost-btn">Torna al titolo</button>
+    </div>
+  </div>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+</html>
