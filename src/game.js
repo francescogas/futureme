@@ -110,7 +110,14 @@ export class Game {
       portalsClosed: 0, keysFound: 0, monstersBanished: 0, quest: null,
     };
     this.state = savedState ? { ...fresh, ...savedState, quest: null } : fresh;
-    if (this.state.hp <= 0) this.state.hp = this.state.maxHp;
+    // potenziamenti permanenti
+    this.upg = Profile.upgradeEffects();
+    this.state.maxHp = 5 + this.upg.bonusHp;
+    if (!savedState) {
+      this.state.hp = this.state.maxHp;
+      if (this.upg.startTorches > 0) this.state.inventory.torch = (this.state.inventory.torch || 0) + this.upg.startTorches;
+    }
+    if (this.state.hp <= 0 || this.state.hp > this.state.maxHp) this.state.hp = this.state.maxHp;
     if (mode === "survival") this.state.dim = "moon";
 
     // avatar del giocatore
@@ -124,7 +131,7 @@ export class Game {
     this.combo = 0;
     this.powerups = {}; // type -> secondi rimanenti
     this.runScore = 0;
-    this.sphere = { has: false, energy: 0, active: false };
+    this.sphere = { has: false, energy: 0, active: false, max: 100 * this.upg.sphereMul };
     UI.setPowerups(this.powerups);
     UI.setSphere(this.sphere);
     UI.setCoins(Profile.coins);
@@ -913,13 +920,18 @@ export class Game {
     if (this.combo >= 5) this._unlockAch("combo5");
     this._checkDaily("combo");
   }
-  get comboMul() { return 1 + Math.min(this.combo, 15) * (this.dailyMod === "comboBoost" ? 0.2 : 0.1); }
+  get comboMul() {
+    let step = this.upg ? this.upg.comboStep : 0.1;
+    if (this.dailyMod === "comboBoost") step += 0.1;
+    return 1 + Math.min(this.combo, 15) * step;
+  }
 
   _reward(event) {
     const r = REWARDS[event]; if (!r) return;
     let coins = Math.round(r.coins * (event === "pickup" || event === "banish" ? this.comboMul : 1));
     if (this.powerups.coins2x > 0) coins *= 2;
     if (this.dailyMod === "doubleCoins") coins *= 2;
+    if (this.upg) coins = Math.round(coins * this.upg.coinMul);
     this.runScore += coins;
     Profile.addCoins(coins);
     const lv = Profile.addXP(r.xp);
@@ -1058,6 +1070,7 @@ export class Game {
     let moveMul = this.weather ? this.weather.mods.moveMul : 1;
     if (this.powerups.speed > 0) moveMul *= 1.6;
     if (this.dailyMod === "alwaysFast") moveMul *= 1.4;
+    if (this.upg) moveMul *= this.upg.moveMul;
     const speed = (run ? 9 : 5) * moveMul * dt;
     let mx = 0, mz = 0;
     if (this.keys.has("KeyW") || this.keys.has("ArrowUp")) mz -= 1;
@@ -1304,7 +1317,7 @@ export class Game {
   // ---------- Sfera del Veggente ----------
   _collectSphere(energy = 100) {
     this.sphere.has = true;
-    this.sphere.energy = Math.max(this.sphere.energy, energy);
+    this.sphere.energy = this.sphere.max || 100;
     this.sphere.active = true;
     UI.setSphere(this.sphere);
     if (this.audio) this.audio.potion();
@@ -1396,7 +1409,7 @@ export class Game {
         this.worldRoot.remove(c);
         this.objects.charges.splice(i, 1);
         if (this.sphere.has) {
-          this.sphere.energy = Math.min(100, this.sphere.energy + 40);
+          this.sphere.energy = Math.min(this.sphere.max || 100, this.sphere.energy + 40);
           UI.setSphere(this.sphere);
           if (this.audio) this.audio.pickup();
           UI.toast("🔋 Sfera ricaricata! (+40)", 1500);

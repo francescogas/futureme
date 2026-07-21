@@ -157,7 +157,8 @@ export function setSphere(sphere) {
   if (!el) return;
   if (!sphere || !sphere.has) { el.classList.add("hidden"); btn && btn.classList.add("hidden"); return; }
   el.classList.remove("hidden"); btn && btn.classList.remove("hidden");
-  $("hs-fill").style.width = Math.max(0, sphere.energy) + "%";
+  const max = sphere.max || 100;
+  $("hs-fill").style.width = Math.max(0, Math.min(100, (sphere.energy / max) * 100)) + "%";
   const label = $("hs-label");
   el.classList.toggle("off", !sphere.active);
   el.classList.toggle("empty", sphere.energy <= 0);

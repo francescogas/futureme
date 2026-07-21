@@ -129,6 +129,16 @@ export const DAILY_CHALLENGES = [
   { id: "eclipse",     name: "Eclissi",            icon: "🌫️", desc: "Nebbia ovunque: i mostri ti vedono a fatica.", mod: "foggy",       goalType: "coins",  goalAmount: 300, goalDesc: "Guadagna 300 monete", reward: 300 },
 ];
 
+// Potenziamenti permanenti (acquistabili con le monete, valgono in tutte le partite)
+export const UPGRADES = [
+  { id: "vitality", name: "Vitalità",   icon: "❤️", desc: "+1 cuore massimo per livello",         max: 5, baseCost: 200, costMul: 1.6, per: "+1 ❤️" },
+  { id: "agility",  name: "Agilità",    icon: "🏃", desc: "+6% velocità di movimento per livello", max: 5, baseCost: 150, costMul: 1.6, per: "+6% velocità" },
+  { id: "seer",     name: "Veggente",   icon: "🔮", desc: "+25% durata della Sfera per livello",   max: 5, baseCost: 180, costMul: 1.6, per: "+25% Sfera" },
+  { id: "luck",     name: "Fortuna",    icon: "🪙", desc: "+10% monete guadagnate per livello",    max: 5, baseCost: 220, costMul: 1.7, per: "+10% 🪙" },
+  { id: "combo",    name: "Furia Combo",icon: "🔥", desc: "Moltiplicatore combo più forte",        max: 5, baseCost: 200, costMul: 1.6, per: "+combo" },
+  { id: "explorer", name: "Esploratore",icon: "🎒", desc: "Inizi con 🔦 torce di difesa",          max: 3, baseCost: 160, costMul: 1.8, per: "+2 🔦 iniziali" },
+];
+
 // Obiettivi/achievement (id, nome, descrizione, icona, soglia opzionale)
 export const ACHIEVEMENTS = [
   { id: "first_key",   name: "Prima Chiave",         desc: "Raccogli la tua prima chiave",       icon: "🔑" },

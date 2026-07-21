@@ -92,6 +92,10 @@ resistite) finisce in **classifica** con l'etichetta 🌊.
   (**COMBO x2, x3...**) che aumenta le monete guadagnate.
 - **Negozio di cosmetici**: sblocca **stili di abiti** e **scie luminose**
   (compresa una scia arcobaleno animata) con le monete guadagnate giocando.
+- **Potenziamenti permanenti** ⬆️ (progressione a lungo termine): spendi le monete
+  per bonus che valgono in **tutte le partite** — ❤️ più cuori, 🏃 velocità,
+  🔮 durata della Sfera, 🪙 monete guadagnate, 🔥 moltiplicatore combo, 🎒 oggetti
+  di difesa iniziali. Ogni potenziamento ha più livelli a costo crescente.
 - **Obiettivi/Achievement**: 10 traguardi da sbloccare, con notifica animata.
 - **Sfida del Giorno**: un evento a rotazione (uguale per tutti nello stesso
   giorno) con un **modificatore** diverso — Corsa all'Oro (monete doppie),

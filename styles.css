@@ -216,6 +216,20 @@ h2 { margin-bottom: 14px; font-size: 26px; }
 .shop-item button.equipped { background: var(--gold); color: #2a1a00; }
 .shop-item button.cant { background: rgba(120,60,60,0.3); color: #ffb0b0; cursor: not-allowed; }
 
+/* ---------- Potenziamenti ---------- */
+.upg-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 12px; margin: 16px 0 20px; }
+.upg-card { background: rgba(10,14,30,0.7); border: 1px solid var(--panel-border); border-radius: 16px; padding: 14px; }
+.upg-head { display: flex; align-items: center; gap: 10px; }
+.upg-icon { font-size: 28px; }
+.upg-name { font-weight: 800; font-size: 15px; }
+.upg-desc { font-size: 12px; color: #a9b8dd; margin: 6px 0 8px; }
+.upg-pips { display: flex; gap: 4px; margin-bottom: 10px; }
+.upg-pip { flex: 1; height: 8px; border-radius: 4px; background: rgba(120,160,255,0.15); }
+.upg-pip.on { background: linear-gradient(90deg, var(--neon), var(--neon2)); }
+.upg-card button { width: 100%; padding: 8px; border-radius: 20px; border: none; cursor: pointer; font-weight: 800; font-size: 13px; background: linear-gradient(90deg, var(--neon), var(--neon2)); color: #041018; }
+.upg-card button.maxed { background: var(--gold); color: #2a1a00; cursor: default; }
+.upg-card button.cant { background: rgba(120,60,60,0.3); color: #ffb0b0; cursor: not-allowed; }
+
 /* ---------- Obiettivi ---------- */
 .ach-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; margin: 14px 0 20px; }
 .ach-card {

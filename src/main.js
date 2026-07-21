@@ -4,7 +4,7 @@
 import * as THREE from "three";
 import { Game } from "./game.js";
 import { buildAvatar, animateAvatar } from "./character.js";
-import { SPECIES, SEXES, OUTFITS, SKIN_COLORS, DIMENSIONS, TRAILS, OUTFIT_PRICES, ACHIEVEMENTS, FREE_OUTFITS, EMOTES } from "./data.js";
+import { SPECIES, SEXES, OUTFITS, SKIN_COLORS, DIMENSIONS, TRAILS, OUTFIT_PRICES, ACHIEVEMENTS, FREE_OUTFITS, EMOTES, UPGRADES } from "./data.js";
 import { AudioManager } from "./audio.js";
 import { Save } from "./save.js";
 import { Profile, todayChallenge } from "./progression.js";
@@ -308,7 +308,7 @@ function buildDimensionCards() {
 // ============================================================
 //  Gestione schermate
 // ============================================================
-const SCREENS = ["screen-title", "screen-intro", "screen-howto", "screen-creator", "screen-dimension", "screen-death", "screen-victory", "screen-pause", "screen-shop", "screen-achievements", "screen-leaderboard", "screen-settings", "screen-multiplayer"];
+const SCREENS = ["screen-title", "screen-intro", "screen-howto", "screen-creator", "screen-dimension", "screen-death", "screen-victory", "screen-pause", "screen-shop", "screen-achievements", "screen-leaderboard", "screen-settings", "screen-multiplayer", "screen-upgrades"];
 function showScreen(id) {
   SCREENS.forEach((s) => UI.hide(s));
   if (id) UI.show(id);
@@ -485,6 +485,30 @@ function afterPurchase() {
   setupCreatorControls(); // aggiorna eventuali lucchetti
 }
 
+// ---------- Potenziamenti permanenti ----------
+function buildUpgrades() {
+  $("upg-coins").textContent = Profile.coins;
+  const grid = $("upg-grid");
+  grid.innerHTML = "";
+  for (const u of UPGRADES) {
+    const lvl = Profile.upgradeLevel(u.id);
+    const cost = Profile.upgradeCost(u.id);
+    const card = document.createElement("div");
+    card.className = "upg-card";
+    let pips = "";
+    for (let i = 0; i < u.max; i++) pips += `<div class="upg-pip${i < lvl ? " on" : ""}"></div>`;
+    let btn;
+    if (cost == null) btn = `<button class="maxed">MASSIMO ✓</button>`;
+    else if (Profile.coins >= cost) btn = `<button data-upg="${u.id}">🪙 ${cost} (${u.per})</button>`;
+    else btn = `<button class="cant">🪙 ${cost}</button>`;
+    card.innerHTML = `<div class="upg-head"><span class="upg-icon">${u.icon}</span><div><div class="upg-name">${u.name}</div><div class="upg-desc">Liv. ${lvl}/${u.max} · ${u.desc}</div></div></div><div class="upg-pips">${pips}</div>${btn}`;
+    grid.appendChild(card);
+  }
+  grid.querySelectorAll("[data-upg]").forEach((b) => b.onclick = () => {
+    if (Profile.buyUpgrade(b.dataset.upg)) { UI.toast("⬆️ Potenziamento acquistato!"); buildUpgrades(); refreshTitleBar(); }
+  });
+}
+
 // ---------- Obiettivi ----------
 function buildAchievements() {
   const grid = $("ach-grid");
@@ -633,6 +657,7 @@ function finishIntro() {
 }
 
 function init() {
+  window.__futuremeProfile = Profile; // hook per debug/test
   preview = new CreatorPreview($(".creator-right") || document.querySelector(".creator-right"));
   setupCreatorControls();
   buildDimensionCards();
@@ -695,6 +720,8 @@ function init() {
 
   $("btn-shop").onclick = () => { buildShop(); showScreen("screen-shop"); };
   $("btn-shop-back").onclick = () => { showScreen("screen-title"); refreshTitleBar(); };
+  $("btn-upgrades").onclick = () => { buildUpgrades(); showScreen("screen-upgrades"); };
+  $("btn-upg-back").onclick = () => { showScreen("screen-title"); refreshTitleBar(); };
   $("btn-achievements").onclick = () => { buildAchievements(); showScreen("screen-achievements"); };
   $("btn-ach-back").onclick = () => showScreen("screen-title");
   $("btn-leaderboard").onclick = () => { buildLeaderboard(); showScreen("screen-leaderboard"); };

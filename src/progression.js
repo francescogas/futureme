@@ -3,7 +3,7 @@
 //  Monete, XP, livelli, sblocchi, achievement, daily, record.
 //  Tutta la valuta è guadagnabile giocando (nessun pagamento reale).
 // ============================================================
-import { FREE_OUTFITS, OUTFIT_PRICES, TRAILS, ACHIEVEMENTS, DAILY_CHALLENGES } from "./data.js";
+import { FREE_OUTFITS, OUTFIT_PRICES, TRAILS, ACHIEVEMENTS, DAILY_CHALLENGES, UPGRADES } from "./data.js";
 
 const KEY = "futureme_profile_v1";
 
@@ -26,6 +26,7 @@ function fresh() {
     achievements: {},
     dailyStreak: 0, lastDaily: "",
     dailyChallengeDone: "",
+    upgrades: {},
     best: { fewestDeaths: null, mostChallengesCleared: 0, bestCombo: 0 },
     leaderboard: [],
   };
@@ -156,6 +157,35 @@ class ProfileManager {
   }
   hasAchievement(id) { return !!this.p.achievements[id]; }
   achievementsUnlockedCount() { return Object.keys(this.p.achievements).length; }
+
+  // ---- potenziamenti permanenti ----
+  upgradeLevel(id) { return (this.p.upgrades && this.p.upgrades[id]) || 0; }
+  upgradeDef(id) { return UPGRADES.find((u) => u.id === id); }
+  upgradeCost(id) {
+    const def = this.upgradeDef(id); if (!def) return Infinity;
+    const lvl = this.upgradeLevel(id);
+    if (lvl >= def.max) return null; // già al massimo
+    return Math.round(def.baseCost * Math.pow(def.costMul, lvl));
+  }
+  buyUpgrade(id) {
+    const cost = this.upgradeCost(id);
+    if (cost == null || !this.spend(cost)) return false;
+    if (!this.p.upgrades) this.p.upgrades = {};
+    this.p.upgrades[id] = this.upgradeLevel(id) + 1;
+    this.save();
+    return true;
+  }
+  // Effetti aggregati pronti da applicare a inizio partita
+  upgradeEffects() {
+    return {
+      bonusHp: this.upgradeLevel("vitality"),
+      moveMul: 1 + this.upgradeLevel("agility") * 0.06,
+      sphereMul: 1 + this.upgradeLevel("seer") * 0.25,
+      coinMul: 1 + this.upgradeLevel("luck") * 0.10,
+      comboStep: 0.10 + this.upgradeLevel("combo") * 0.02,
+      startTorches: this.upgradeLevel("explorer") * 2,
+    };
+  }
 
   // ---- classifica (locale, pronta per un backend) ----
   addScore(name, score, won, mode = null) {
