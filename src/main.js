@@ -327,7 +327,7 @@ function ensureGame() {
     game = new Game($("scene"), {
       onDeath: (state) => onDeath(state),
       onVictory: (state) => onVictory(state),
-      onStateChange: (state) => { UI.updateHUD(state); Save.write(charConfig, state); tutorialOnState(state); },
+      onStateChange: (state) => { UI.updateHUD(state); if (game && game.mode !== "survival") Save.write(charConfig, state); tutorialOnState(state); },
       audio,
     });
     touchUI = setupTouch(game);

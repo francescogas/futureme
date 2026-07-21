@@ -182,6 +182,8 @@ export class Game {
     UI.setMood(dimId, this.weather.type);
     if (this.mode === "survival") this._populateSurvival();
     else { this._populate(dimId, level); UI.setWave(null); }
+    const centerPanel = document.getElementById("hud-center-panel");
+    if (centerPanel) centerPanel.classList.toggle("hidden", this.mode === "survival");
 
     // posiziona il giocatore al centro
     this.player.position.set(0, 0, 8);
