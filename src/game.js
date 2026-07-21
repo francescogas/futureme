@@ -1197,10 +1197,12 @@ export class Game {
     let moving = 0;
     if (mx || mz) {
       const len = Math.hypot(mx, mz); mx /= len; mz /= len;
-      // direzione relativa alla yaw della camera
+      // f = avanti (spingi su / W), r = destra (D). "Avanti" = verso lo
+      // schermo, cioè lontano dalla telecamera che sta dietro al giocatore.
+      const fwd = -mz, rgt = mx;
       const sin = Math.sin(this.yaw), cos = Math.cos(this.yaw);
-      const dx = mx * cos - mz * sin;
-      const dz = mx * sin + mz * cos;
+      const dx = rgt * cos + fwd * sin;
+      const dz = -rgt * sin + fwd * cos;
       const nx = this.player.position.x + dx * speed;
       const nz = this.player.position.z + dz * speed;
       if (!this._blocked(nx, nz)) {
