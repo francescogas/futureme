@@ -1,18 +1,19 @@
 // ============================================================
-//  FUTUREME — controlli touch (joystick + pulsante azione)
+//  FUTUREME — controlli touch (joystick + pulsanti azione)
+//  Layout stile mobile dei giochi popolari: joystick a sinistra
+//  per muoversi, cluster di pulsanti a destra (attacca / salta /
+//  interagisci / sfera / vista), trascina lo schermo per guardare.
 // ============================================================
 
 export function isTouchDevice() {
   return ("ontouchstart" in window) || navigator.maxTouchPoints > 0;
 }
 
-// Collega il joystick e il pulsante azione al gioco.
 export function setupTouch(game) {
   const wrap = document.getElementById("touch-controls");
   const stick = document.getElementById("joystick");
   const knob = document.getElementById("joystick-knob");
-  const action = document.getElementById("btn-action");
-  if (!wrap) return { show() {}, hide() {} };
+  if (!wrap || !stick) return { show() {}, hide() {} };
 
   const R = 44; // raggio massimo del knob (px)
   let activeId = null;
@@ -32,11 +33,11 @@ export function setupTouch(game) {
     const clamped = Math.min(len, R);
     const nx = (dx / len) * clamped, ny = (dy / len) * clamped;
     knob.style.transform = `translate(${nx}px, ${ny}px)`;
-    // vettore normalizzato: x = destra, z = giù (indietro) — coerente con la tastiera
     game.setTouchMove(dx / len * (clamped / R), dy / len * (clamped / R));
   };
 
   stick.addEventListener("pointerdown", (e) => {
+    e.stopPropagation();
     activeId = e.pointerId;
     stick.setPointerCapture(e.pointerId);
     onMove(e);
@@ -45,10 +46,22 @@ export function setupTouch(game) {
   stick.addEventListener("pointerup", reset);
   stick.addEventListener("pointercancel", reset);
 
-  action.addEventListener("pointerdown", (e) => {
-    e.preventDefault();
-    game.interact();
-  });
+  // Collega un pulsante a un'azione (evita che il tocco ruoti la telecamera)
+  const bind = (id, fn) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      fn();
+    });
+  };
+
+  bind("btn-action", () => game.attack());       // 👊 attacco primario
+  bind("tb-jump", () => game.jump());             // ⤴ salto
+  bind("tb-interact", () => game.interact());     // ✋ interagisci (E)
+  bind("tb-sphere", () => game.toggleSphere());   // 🔮 sfera
+  bind("tb-cam", () => game.cycleCamera());       // 🎥 cambia vista
 
   return {
     show() { wrap.classList.remove("hidden"); },

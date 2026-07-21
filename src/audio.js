@@ -86,6 +86,65 @@ export class AudioManager {
       }
     }
     this._ambientPad = pad;
+    this._startMusic(dimId);
+  }
+
+  // ---------- Musica di sottofondo (sequencer melodico per dimensione) ----------
+  _note(freq, t, dur, type, vol, dest) {
+    const o = this.ctx.createOscillator();
+    const g = this.ctx.createGain();
+    o.type = type; o.frequency.value = freq;
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(vol, t + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+    o.connect(g); g.connect(dest || this.master);
+    o.start(t); o.stop(t + dur + 0.03);
+  }
+
+  _startMusic(dimId) {
+    if (!this.enabled || !this.ctx) return;
+    this._stopMusic();
+    const scales = {
+      earth: { root: 130.81, steps: [0, 3, 5, 7, 10], bpm: 96,  wave: "triangle" },
+      moon:  { root: 98.00,  steps: [0, 2, 3, 7, 8],  bpm: 78,  wave: "sawtooth" },
+      sun:   { root: 174.61, steps: [0, 4, 7, 9, 12], bpm: 116, wave: "sine" },
+    };
+    const cfg = scales[dimId] || scales.earth;
+    const semi = (n) => Math.pow(2, n / 12);
+    const beat = 60 / cfg.bpm / 2;                 // ottavi
+    const gain = this.ctx.createGain();
+    gain.gain.value = 0.9; gain.connect(this.master);
+    this._musicGain = gain;
+    const state = { step: 0, next: this.ctx.currentTime + 0.15 };
+    this._music = state;
+    this._musicInt = setInterval(() => {
+      if (!this.ctx || !this._music) return;
+      const horizon = this.ctx.currentTime + 0.25;
+      while (state.next < horizon) {
+        const s = state.step, t = state.next;
+        // basso sui tempi forti
+        if (s % 4 === 0) {
+          const bass = cfg.root * semi(cfg.steps[(s / 4) % cfg.steps.length] - 12);
+          this._note(bass, t, beat * 2.2, cfg.wave, 0.11, gain);
+        }
+        // arpeggio melodico
+        const mel = cfg.steps[(s * 2 + Math.floor(s / 8)) % cfg.steps.length];
+        this._note(cfg.root * semi(mel + 12), t, beat * 0.85, "triangle", 0.05, gain);
+        // eco leggero un'ottava sopra ogni 8 passi
+        if (s % 8 === 4) this._note(cfg.root * semi(mel + 24), t, beat * 0.6, "sine", 0.025, gain);
+        state.step++; state.next += beat;
+      }
+    }, 60);
+  }
+
+  _stopMusic() {
+    if (this._musicInt) { clearInterval(this._musicInt); this._musicInt = null; }
+    this._music = null;
+    if (this._musicGain && this.ctx) {
+      const g = this._musicGain; this._musicGain = null;
+      try { g.gain.setTargetAtTime(0, this.ctx.currentTime, 0.2); } catch (e) {}
+      setTimeout(() => { try { g.disconnect(); } catch (e) {} }, 500);
+    }
   }
 
   // ---------- Tensione del boss (battito che accelera) ----------
@@ -196,6 +255,9 @@ export class AudioManager {
     freqs.forEach((f, i) => setTimeout(() => this._blip(f, 0.18, type, vol), i * step * 1000));
   }
 
+  jump()    { this._blip(300, 0.16, "square", 0.20, 640); }
+  land()    { this._blip(170, 0.12, "sine", 0.22, 70); }
+  swing()   { this._blip(680, 0.10, "sawtooth", 0.16, 190); }
   pickup()  { this._blip(880, 0.12, "triangle", 0.25, 1320); }
   portal()  { this._blip(200, 0.5, "sine", 0.3, 1200); }
   seal()    { this._arp([523, 659, 784], 0.06, "sine", 0.28); }

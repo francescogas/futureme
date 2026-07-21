@@ -86,7 +86,17 @@
     <!-- Controlli touch (mobile) -->
     <div id="touch-controls" class="hidden">
       <div id="joystick"><div id="joystick-knob"></div></div>
-      <button id="btn-action">E</button>
+      <div class="touch-btns">
+        <div class="tb-row tb-row-top">
+          <button id="tb-cam" class="tb tb-mini" title="Cambia vista (V)">🎥</button>
+          <button id="tb-sphere" class="tb tb-mini" title="Sfera (Q)">🔮</button>
+        </div>
+        <div class="tb-row">
+          <button id="tb-interact" class="tb tb-act" title="Interagisci (E)">✋</button>
+          <button id="tb-jump" class="tb tb-act" title="Salta">⤴</button>
+        </div>
+        <button id="btn-action" class="tb tb-primary" title="Attacca">👊</button>
+      </div>
     </div>
 
     <div class="minimap-wrap">
@@ -227,9 +237,11 @@
     <div class="panel">
       <h2 data-i18n="Come si gioca">Come si gioca</h2>
       <ul class="howto-list">
-        <li><b>WASD / Frecce</b> — muoviti nel mondo 3D</li>
-        <li><b>Mouse</b> — ruota la telecamera · <b>Shift</b> — corri</li>
-        <li><b>E / Spazio</b> — interagisci con persone e portali</li>
+        <li><b>WASD / Frecce</b> — muoviti nel mondo 3D · <b>Shift</b> — corri</li>
+        <li><b>Mouse</b> (trascina) — ruota la telecamera</li>
+        <li><b>Spazio</b> — salta · <b>F / J</b> — attacca (pugni) · <b>V</b> — cambia vista (terza persona / prima persona / vista ampia)</li>
+        <li><b>E</b> — interagisci con persone e portali · <b>Q</b> — Sfera del Veggente · <b>M</b> — mappa</li>
+        <li><b>📱 Su mobile</b> — joystick a sinistra per muoverti, trascina lo schermo per guardarti intorno, pulsanti a destra: 👊 attacca · ⤴ salta · ✋ interagisci · 🔮 sfera · 🎥 vista</li>
         <li><b>🔑 Chiavi & 🛂 Passaporti</b> — sbloccano portali misteriosi. Non saprai dove ti porteranno!</li>
         <li><b>🌍 Terra</b> — cammina fra le città reali del mondo (Roma col Colosseo, Tokyo con la sua torre neon, New York coi grattacieli e la Statua della Libertà, Venezia coi canali e le gondole, Parigi con la Torre Eiffel, Il Cairo con le piramidi) e raccogli indizi.</li>
         <li><b>🌙 Luna</b> — sempre notte. Zombie, vampiri e lupi mannari. Difenditi con 🧄 aglio, ✝️ croci, ⚙️ argento e 🔦 torce. Chiudi i portali prima che i mostri raggiungano la Terra.</li>
