@@ -74,6 +74,15 @@ dello schermo per ruotare la telecamera.
 - Server Node/WebSocket incluso (`server.js`); il single-player resta disponibile
   anche offline.
 
+## 🌊 Modalità Sopravvivenza
+
+Oltre all'Avventura, dal menu puoi lanciare la **Sopravvivenza**: un'arena sulla
+Luna dove affronti **ondate** di mostri sempre più numerose e forti, con un
+**boss ogni 5 ondate**. Si combatte a mani libere (premi **E** vicino ai mostri,
+niente oggetti da consumare), raccogli power-up e la Sfera del Veggente, e a ogni
+ondata superata ottieni un bonus. Alla sconfitta il punteggio (in base alle ondate
+resistite) finisce in **classifica** con l'etichetta 🌊.
+
 ## 🎮 Meta-gioco e coinvolgimento (stile giochi popolari)
 
 - **Monete & Gradi (XP)**: guadagni monete e punti esperienza raccogliendo

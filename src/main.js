@@ -16,6 +16,7 @@ const $ = (id) => document.getElementById(id);
 const audio = new AudioManager();
 let touchUI = null;
 let selectedDaily = null; // sfida del giorno scelta per la prossima partita
+let selectedMode = null;  // null = avventura; "survival" = sopravvivenza
 
 // ---------- Multiplayer ----------
 let net = null;
@@ -343,13 +344,15 @@ function startGame(startDim) {
   UI.show("hud");
   ensureGame();
   UI.setQuest(null);
-  game.start(charConfig, null, selectedDaily);
-  // se l'utente ha scelto una dimensione diversa dalla Terra, viaggia subito
-  if (startDim && startDim !== "earth") {
+  game.start(charConfig, null, selectedDaily, selectedMode);
+  // in avventura: se scelta una dimensione diversa dalla Terra, viaggia subito
+  if (selectedMode !== "survival" && startDim && startDim !== "earth") {
     game.loadDimension(startDim, 1, `Inizi nella dimensione ${DIMENSIONS[startDim].name}`);
   }
   UI.updateHUD(game.state);
-  if (selectedDaily) {
+  if (selectedMode === "survival") {
+    UI.setQuest("Sopravvivi al maggior numero di ondate!");
+  } else if (selectedDaily) {
     UI.setQuest(`Sfida del Giorno: ${selectedDaily.goalDesc}`);
     UI.toast(`${selectedDaily.icon} Sfida del Giorno attiva: ${selectedDaily.name}!`, 3200);
   } else {
@@ -372,15 +375,27 @@ function continueGame() {
 }
 
 function onDeath(state) {
-  $("death-challenges").textContent = state.challenges;
   UI.updateHUD(state);
-  const texts = [
-    "I mondi vacillano... ma la tua storia non è finita.",
-    "Sei caduto nell'oscurità. Rialzati e riprova.",
-    "Il tuo io parallelo ha ancora bisogno di te.",
-  ];
-  $("death-text").textContent = texts[Math.floor(Math.random() * texts.length)];
   UI.hide("hud");
+  if (game && game.mode === "survival") {
+    const wave = state.survivalWave || 0;
+    $("death-text").textContent = `Hai resistito fino all'ondata ${wave}! Il tuo punteggio è in classifica.`;
+    $("death-bignum").innerHTML = `🌊 ${wave} <span class="muted">ondate</span>`;
+    $("death-remain").classList.add("hidden");
+    $("btn-respawn").textContent = "🌊 Rigioca";
+    refreshTitleBar();
+  } else {
+    $("death-challenges").textContent = state.challenges;
+    $("death-bignum").innerHTML = `+100 <span class="muted">sfide</span>`;
+    $("death-remain").classList.remove("hidden");
+    $("btn-respawn").textContent = "Rialzati";
+    const texts = [
+      "I mondi vacillano... ma la tua storia non è finita.",
+      "Sei caduto nell'oscurità. Rialzati e riprova.",
+      "Il tuo io parallelo ha ancora bisogno di te.",
+    ];
+    $("death-text").textContent = texts[Math.floor(Math.random() * texts.length)];
+  }
   showScreen("screen-death");
 }
 
@@ -520,8 +535,9 @@ function buildLeaderboard() {
     const row = document.createElement("div");
     row.className = "lb-row" + (i === 0 ? " top" : "");
     const medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : (i + 1);
+    const tag = e.mode === "survival" ? "🌊" : (e.won ? "🏆" : "");
     row.innerHTML = `<div class="lb-rank">${medal}</div>
-      <div class="lb-name">${e.name} ${e.won ? "🏆" : ""}<div class="lb-meta">Grado ${e.level} · ${e.date}</div></div>
+      <div class="lb-name">${e.name} ${tag}<div class="lb-meta">${e.mode === "survival" ? "Sopravvivenza · " : ""}Grado ${e.level} · ${e.date}</div></div>
       <div class="lb-score">${e.score} pt</div>`;
     list.appendChild(row);
   });
@@ -623,20 +639,26 @@ function init() {
 
   $("btn-start").onclick = () => {
     audio.init();
-    selectedDaily = null;
+    selectedDaily = null; selectedMode = null;
     // mostra l'intro solo la prima volta; poi si può rivedere con "La storia"
     let seen = false;
     try { seen = localStorage.getItem(INTRO_KEY) === "1"; } catch (e) {}
     if (seen) showScreen("screen-creator"); else showIntro();
   };
+  $("btn-survival").onclick = () => {
+    audio.init();
+    selectedDaily = null; selectedMode = "survival";
+    UI.toast("🌊 Modalità Sopravvivenza: resisti alle ondate!", 3000);
+    showScreen("screen-creator");
+  };
   $("btn-daily").onclick = () => {
     if (!Profile.dailyChallengeAvailable()) return;
     audio.init();
-    selectedDaily = todayChallenge();
+    selectedDaily = todayChallenge(); selectedMode = null;
     UI.toast(`${selectedDaily.icon} Sfida: ${selectedDaily.goalDesc}`, 3000);
     showScreen("screen-creator");
   };
-  $("btn-continue").onclick = () => { selectedDaily = null; continueGame(); };
+  $("btn-continue").onclick = () => { selectedDaily = null; selectedMode = null; continueGame(); };
   $("btn-story").onclick = () => { audio.init(); showIntro(); };
   $("btn-intro-next").onclick = () => nextStorySlide();
   $("btn-intro-skip").onclick = () => finishIntro();
@@ -723,10 +745,16 @@ function init() {
   $("btn-howto").onclick = () => showScreen("screen-howto");
   $("btn-howto-back").onclick = () => showScreen("screen-title");
   $("btn-creator-back").onclick = () => showScreen("screen-title");
-  $("btn-to-dimension").onclick = () => showScreen("screen-dimension");
+  $("btn-to-dimension").onclick = () => {
+    if (selectedMode === "survival") startGame("moon");
+    else showScreen("screen-dimension");
+  };
   $("btn-dimension-back").onclick = () => showScreen("screen-creator");
 
-  $("btn-respawn").onclick = () => { showScreen(null); UI.show("hud"); game.respawn(); };
+  $("btn-respawn").onclick = () => {
+    if (game && game.mode === "survival") { startGame("moon"); }
+    else { showScreen(null); UI.show("hud"); game.respawn(); }
+  };
   $("btn-restart").onclick = () => { showScreen("screen-creator"); };
 
   $("btn-pause").onclick = () => { game.pause(); UI.hide("hud"); showScreen("screen-pause"); };

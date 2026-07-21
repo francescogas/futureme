@@ -158,10 +158,10 @@ class ProfileManager {
   achievementsUnlockedCount() { return Object.keys(this.p.achievements).length; }
 
   // ---- classifica (locale, pronta per un backend) ----
-  addScore(name, score, won) {
+  addScore(name, score, won, mode = null) {
     if (!this.p.leaderboard) this.p.leaderboard = [];
     this.p.leaderboard.push({
-      name: (name || "Eroe").slice(0, 16), score: Math.round(score), won: !!won,
+      name: (name || "Eroe").slice(0, 16), score: Math.round(score), won: !!won, mode,
       level: this.p.level, date: todayStr(),
     });
     this.p.leaderboard.sort((a, b) => b.score - a.score);

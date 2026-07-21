@@ -44,6 +44,8 @@ export class Game {
     this.comboTimer = 0;
     this.trailTimer = 0;
     this.sphere = { has: false, energy: 0, active: false }; // Sfera del Veggente
+    this.mode = null;             // null = avventura; "survival" = ondate
+    this.survival = null;
 
     this._initRenderer();
     this._initInput();
@@ -92,8 +94,10 @@ export class Game {
   }
 
   // ---------- Nuova partita (o ripresa da salvataggio) ----------
-  start(charConfig, savedState = null, daily = null) {
+  start(charConfig, savedState = null, daily = null, mode = null) {
     this.charConfig = charConfig;
+    this.mode = mode;
+    this.survival = mode === "survival" ? { wave: 0, betweenWaves: false, timer: 0 } : null;
     this.daily = daily;                 // sfida del giorno attiva (o null)
     this.dailyMod = daily ? daily.mod : null;
     this.dailyCompleted = false;
@@ -107,6 +111,7 @@ export class Game {
     };
     this.state = savedState ? { ...fresh, ...savedState, quest: null } : fresh;
     if (this.state.hp <= 0) this.state.hp = this.state.maxHp;
+    if (mode === "survival") this.state.dim = "moon";
 
     // avatar del giocatore
     const built = buildAvatar(charConfig);
@@ -167,7 +172,8 @@ export class Game {
     UI.setWeather(this.weather.label.emoji, this.weather.label.name);
     if (this.audio) this.audio.setWeatherAmbience(this.weather.type);
     UI.setMood(dimId, this.weather.type);
-    this._populate(dimId, level);
+    if (this.mode === "survival") this._populateSurvival();
+    else { this._populate(dimId, level); UI.setWave(null); }
 
     // posiziona il giocatore al centro
     this.player.position.set(0, 0, 8);
@@ -193,7 +199,9 @@ export class Game {
     }
     if (this.weather && this.weather.type === "sand") this._unlockAch("storm");
     // banner d'arrivo
-    if (dimId === "earth" && this.city) {
+    if (this.mode === "survival") {
+      UI.cityBanner("ARENA", "Sopravvivenza", "🌊 Resisti alle ondate!");
+    } else if (dimId === "earth" && this.city) {
       UI.cityBanner(this.city.name, "Terra · " + this.city.country, this.city.landmark);
     } else {
       UI.cityBanner(DIMENSIONS[dimId].name, "Dimensione", DIMENSIONS[dimId].emoji + " " + DIMENSIONS[dimId].desc.split(".")[0]);
@@ -407,6 +415,71 @@ export class Game {
     }
   }
 
+  // ---------- Modalità Sopravvivenza (arena a ondate) ----------
+  _spawnAt(fn) {
+    const a = rand(0, Math.PI * 2), r = rand(10, this.worldSize - 10);
+    return fn(Math.cos(a) * r, Math.sin(a) * r);
+  }
+
+  _populateSurvival() {
+    this.objects.powerups = [];
+    this.objects.spheres = [];
+    this.objects.charges = [];
+    this._addSphere(this._spawnAt((x, z) => makeSphere(x, z)));
+    for (let i = 0; i < 2; i++) this._addCharge(this._spawnAt((x, z) => makeSphereCharge(x, z)));
+    // qualche power-up sparso
+    const puTypes = Object.keys(POWERUPS);
+    for (let i = 0; i < 3; i++) { const pu = this._spawnAt((x, z) => makePowerup(pick(puTypes), x, z)); this.objects.powerups.push(pu); this.worldRoot.add(pu); }
+    this.survival = { wave: 0, betweenWaves: true, timer: 2 }; // parte dopo 2s
+    UI.setWave(0, 0);
+  }
+
+  _startWave(n) {
+    this.survival.wave = n;
+    this.survival.betweenWaves = false;
+    const types = ["zombie", "vampire", "werewolf"];
+    const isBossWave = n % 5 === 0;
+    const nMon = Math.min(18, 3 + n) - (isBossWave ? 2 : 0);
+    const nElite = Math.floor(n / 3);
+    const nBats = Math.floor(n / 2);
+    for (let i = 0; i < nMon; i++) this._addMonster(this._spawnAt((x, z) => makeMonster(pick(types), x, z, i < nElite)));
+    for (let i = 0; i < nBats; i++) this._addMonster(this._spawnAt((x, z) => makeBat(x, z, i < Math.floor(nElite / 2))));
+    if (isBossWave) {
+      const bx = this._spawnAt((x, z) => ({ x, z }));
+      const boss = makeBoss(bx.x, bx.z, Math.random() < 0.5 ? "vampire" : "guardian");
+      this.boss = boss; this.worldRoot.add(boss); UI.setBossName(boss.userData.name);
+    }
+    UI.setWave(n, this._survivalEnemiesLeft());
+    UI.toast(isBossWave ? `🌊 ONDATA ${n} — BOSS!` : `🌊 Ondata ${n}`, 2200);
+    if (this.audio) this.audio.seal();
+  }
+
+  _survivalEnemiesLeft() { return this.objects.monsters.length + (this.boss ? 1 : 0); }
+
+  _updateSurvival(dt) {
+    if (this.mode !== "survival" || !this.survival) return;
+    const s = this.survival;
+    UI.setWave(s.wave, this._survivalEnemiesLeft());
+    if (s.betweenWaves) {
+      s.timer -= dt;
+      if (s.timer <= 0) this._startWave(s.wave + 1);
+    } else if (this._survivalEnemiesLeft() === 0) {
+      // ondata superata
+      s.betweenWaves = true; s.timer = 3;
+      const bonus = 50 + s.wave * 25;
+      this.runScore += bonus;
+      Profile.addCoins(bonus); Profile.addXP(bonus);
+      UI.setCoins(Profile.coins);
+      UI.coinPopup(bonus);
+      UI.toast(`✅ Ondata ${s.wave} superata! +${bonus} 🪙 — preparati...`, 2600);
+      // ricompensa: nuove cariche/power-up ogni tot ondate
+      if (s.wave % 3 === 0) {
+        for (let i = 0; i < 2; i++) { const pu = this._spawnAt((x, z) => makePowerup(pick(Object.keys(POWERUPS)), x, z)); this.objects.powerups.push(pu); this.worldRoot.add(pu); }
+        this._addCharge(this._spawnAt((x, z) => makeSphereCharge(x, z)));
+      }
+    }
+  }
+
   _spawnAlterEgo(evil) {
     const alter = makeAlterEgo(this.avatarTemplate, evil);
     const a = rand(0, Math.PI * 2), r = this.worldSize - 14;
@@ -446,6 +519,7 @@ export class Game {
   _giveItem(t, n = 1) { this.state.inventory[t] = (this.state.inventory[t] || 0) + n; }
 
   _setObjectiveForDim(dimId) {
+    if (this.mode === "survival") { UI.setObjective("sopravvivi alle ondate! Premi E vicino ai mostri per respingerli."); return; }
     if (dimId === "earth") UI.setObjective("raccogli 🔑 chiavi e 🛂 passaporti, poi entra in un portale (E).");
     else if (dimId === "moon") UI.setObjective("chiudi i 🔴 portali d'invasione e difenditi. Libera il tuo io con la pozione.");
     else UI.setObjective("raccogli i 3 ingredienti della pozione: 🌿 💎 🍊.");
@@ -676,12 +750,14 @@ export class Game {
   }
 
   _banishMonster(m) {
-    const defense = ["torch", "silver", "cross", "garlic"].find((t) => this._hasItem(t));
-    if (!defense) {
+    // in Sopravvivenza si combatte a mani libere (nessun oggetto richiesto)
+    const free = this.mode === "survival";
+    const defense = free ? null : ["torch", "silver", "cross", "garlic"].find((t) => this._hasItem(t));
+    if (!free && !defense) {
       UI.openDialog("Mostro!", "Non hai armi per respingerlo! Ti serve 🔦 torcia, ⚙️ argento, ✝️ croce o 🧄 aglio.", [{ label: "Fuggi", cb: UI.closeDialog }]);
       return;
     }
-    this._takeItem(defense);
+    if (defense) this._takeItem(defense);
     const i = this.objects.monsters.indexOf(m);
     if (i >= 0) this.objects.monsters.splice(i, 1);
     this._spawnBurst(m.position.x, 1.2, m.position.z, 0xffe9a0, 18);
@@ -694,7 +770,7 @@ export class Game {
     this._checkDaily("banish");
     this._progress(15);
     if (this.audio) this.audio.banish();
-    UI.toast(`💥 Mostro respinto con ${ITEMS[defense].emoji}!`, 1500);
+    UI.toast(free ? "💥 Mostro respinto!" : `💥 Mostro respinto con ${ITEMS[defense].emoji}!`, 1500);
     this._checkQuest();
     this.cb.onStateChange(this.state);
   }
@@ -702,12 +778,13 @@ export class Game {
   // ---------- Boss finale ----------
   _attackBoss() {
     const bossName = this.boss.userData.name;
-    const defense = ["torch", "silver", "cross", "garlic"].find((t) => this._hasItem(t));
-    if (!defense) {
+    const free = this.mode === "survival";
+    const defense = free ? null : ["torch", "silver", "cross", "garlic"].find((t) => this._hasItem(t));
+    if (!free && !defense) {
       UI.openDialog(bossName, "Serve un'arma per colpirlo! Raccogli 🔦 torce, ⚙️ argento, ✝️ croci o 🧄 aglio.", [{ label: "Indietro", cb: UI.closeDialog }]);
       return;
     }
-    this._takeItem(defense);
+    if (defense) this._takeItem(defense);
     this.boss.userData.hp--;
     if (this.audio) this.audio.banish();
     this.shake = 0.3;
@@ -728,7 +805,8 @@ export class Game {
       this._reward("bossKill");
       this._unlockAch("boss_slayer");
       if (this.audio) { this.audio.seal(); this.audio.setBossProximity(0); }
-      UI.openDialog(`${bossName} è caduto!`, "L'hai sconfitto! Ora puoi raggiungere il tuo io imprigionato e usare la pozione magica.", [{ label: "Avanti!", primary: true, cb: UI.closeDialog }]);
+      if (this.mode === "survival") UI.toast(`💥 ${bossName} sconfitto!`, 2200);
+      else UI.openDialog(`${bossName} è caduto!`, "L'hai sconfitto! Ora puoi raggiungere il tuo io imprigionato e usare la pozione magica.", [{ label: "Avanti!", primary: true, cb: UI.closeDialog }]);
     } else {
       UI.toast(`⚔️ Colpito! (${this.boss.userData.hp}/${this.boss.userData.maxHp})`, 1400);
     }
@@ -905,11 +983,17 @@ export class Game {
     this.running = false;
     if (this.audio) this.audio.death();
     this.state.deaths++;
-    this.state.challenges += 100;
     this.combo = 0; UI.hideCombo();
     this.powerups = {}; UI.setPowerups(this.powerups);
-    Profile.recordRun(this.state.deaths, Math.max(0, 1000 - this.state.challenges));
-    Profile.addScore(this.charConfig.name, this.runScore, false);
+    if (this.mode === "survival") {
+      const wave = this.survival ? this.survival.wave : 0;
+      Profile.addScore(this.charConfig.name, this.runScore, false, "survival");
+      this.state.survivalWave = wave;
+    } else {
+      this.state.challenges += 100;
+      Profile.recordRun(this.state.deaths, Math.max(0, 1000 - this.state.challenges));
+      Profile.addScore(this.charConfig.name, this.runScore, false);
+    }
     this.cb.onStateChange(this.state);
     this.cb.onDeath(this.state);
   }
@@ -945,6 +1029,7 @@ export class Game {
     if (this.remotes.size) this._updateRemotes(dt, t);
     if (this.emotes.length) this._updateEmotes(dt);
     this._updateSphere(dt);
+    if (this.mode === "survival") this._updateSurvival(dt);
     if (this.alterBeam) this.alterBeam.material.opacity = 0.2 + Math.sin(t * 3) * 0.12;
     this.minimap.render(this);
 

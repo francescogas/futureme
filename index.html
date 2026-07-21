@@ -41,6 +41,8 @@
       </div>
     </div>
 
+    <div class="hud-wave hidden" id="hud-wave">🌊 ONDATA <b id="wave-n">1</b> · <span id="wave-enemies">0</span> nemici</div>
+
     <div class="hud-boss hidden" id="hud-boss">
       <div class="boss-name" id="boss-name">👹 GUARDIANO DELLA LUNA</div>
       <div class="boss-bar"><div class="boss-bar-fill" id="boss-bar-fill"></div></div>
@@ -140,6 +142,7 @@
       </div>
       <button id="btn-continue" class="big-btn hidden">↻ CONTINUA</button>
       <button id="btn-start" class="big-btn">▶ INIZIA L'AVVENTURA</button>
+      <button id="btn-survival" class="big-btn">🌊 SOPRAVVIVENZA</button>
       <div class="title-row">
         <button id="btn-shop" class="ghost-btn">🛒 Negozio</button>
         <button id="btn-achievements" class="ghost-btn">🏆 Obiettivi</button>
@@ -322,8 +325,8 @@
     <div class="panel center">
       <h2 class="danger">SEI CADUTO</h2>
       <p id="death-text">I mondi vacillano... ma non è finita.</p>
-      <p class="big-number">+100 <span class="muted">sfide</span></p>
-      <p class="muted">Sfide rimanenti: <b id="death-challenges">1100</b></p>
+      <p class="big-number" id="death-bignum">+100 <span class="muted">sfide</span></p>
+      <p class="muted" id="death-remain">Sfide rimanenti: <b id="death-challenges">1100</b></p>
       <button id="btn-respawn" class="big-btn">Rialzati</button>
     </div>
   </div>

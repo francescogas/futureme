@@ -171,6 +171,15 @@ export function setWeather(emoji, name) {
   el.title = name || "Meteo";
 }
 
+export function setWave(n, enemies) {
+  const el = $("hud-wave");
+  if (!el) return;
+  if (n == null) { el.classList.add("hidden"); return; }
+  el.classList.remove("hidden");
+  $("wave-n").textContent = n;
+  $("wave-enemies").textContent = enemies;
+}
+
 export function setBossName(name) {
   const el = $("boss-name");
   if (el) el.textContent = (name && name.includes("VAMPIRI") ? "🧛 " : "👹 ") + (name || "BOSS");
