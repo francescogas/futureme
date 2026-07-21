@@ -9,12 +9,36 @@ import { AudioManager } from "./audio.js";
 import { Save } from "./save.js";
 import { Profile, todayChallenge } from "./progression.js";
 import { setupTouch, isTouchDevice } from "./touch.js";
+import { Net } from "./net.js";
 import * as UI from "./ui.js";
 
 const $ = (id) => document.getElementById(id);
 const audio = new AudioManager();
 let touchUI = null;
 let selectedDaily = null; // sfida del giorno scelta per la prossima partita
+
+// ---------- Multiplayer ----------
+let net = null;
+function ensureNet() {
+  if (net) return net;
+  net = new Net({
+    onStatus: (s, info) => {
+      const el = $("mp-status");
+      if (s === "connected") { el.textContent = "✅ Connesso!"; el.className = "mp-status ok"; $("btn-mp-connect").classList.add("hidden"); $("btn-mp-disconnect").classList.remove("hidden"); }
+      else if (s === "disconnected") { el.textContent = "Disconnesso"; el.className = "mp-status"; $("btn-mp-connect").classList.remove("hidden"); $("btn-mp-disconnect").classList.add("hidden"); UI.showMultiplayerHud(false); }
+      else { el.textContent = "⚠️ " + (info || "Errore di connessione"); el.className = "mp-status err"; }
+    },
+    onWelcome: (peers) => { if (game) game.onWelcome(peers); UI.setOnlineCount(peers.length + 1); UI.showMultiplayerHud(true); },
+    onPeerJoin: (p) => { if (game) game.addRemote(p); UI.addChatMessage("", `${p.name} è entrato in questa dimensione`, true); },
+    onPeerMove: (id, d) => { if (game) game.moveRemote(id, d); },
+    onPeerLeave: (id) => { if (game) game.removeRemote(id); },
+    onChat: (m) => { UI.addChatMessage(m.name, escapeHtml(m.text)); },
+    onCount: (n) => { UI.setOnlineCount(n); },
+  });
+  if (game) game.net = net;
+  return net;
+}
+function escapeHtml(s) { return (s || "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
 
 // ---------- Impostazioni persistenti ----------
 const SETTINGS_KEY = "futureme_settings_v1";
@@ -239,7 +263,7 @@ function buildDimensionCards() {
 // ============================================================
 //  Gestione schermate
 // ============================================================
-const SCREENS = ["screen-title", "screen-intro", "screen-howto", "screen-creator", "screen-dimension", "screen-death", "screen-victory", "screen-pause", "screen-shop", "screen-achievements", "screen-leaderboard", "screen-settings"];
+const SCREENS = ["screen-title", "screen-intro", "screen-howto", "screen-creator", "screen-dimension", "screen-death", "screen-victory", "screen-pause", "screen-shop", "screen-achievements", "screen-leaderboard", "screen-settings", "screen-multiplayer"];
 function showScreen(id) {
   SCREENS.forEach((s) => UI.hide(s));
   if (id) UI.show(id);
@@ -264,6 +288,7 @@ function ensureGame() {
     touchUI = setupTouch(game);
     window.__futuremeGame = game; // hook per debug/test
   }
+  if (net) game.net = net;
   applySettings();
   if (touchUI) { isTouchDevice() ? touchUI.show() : touchUI.hide(); }
 }
@@ -584,6 +609,39 @@ function init() {
   $("btn-lb-back").onclick = () => showScreen("screen-title");
   $("btn-settings").onclick = () => { setupSettingsControls(); showScreen("screen-settings"); };
   $("btn-settings-back").onclick = () => showScreen("screen-title");
+
+  // ---- Multiplayer ----
+  $("btn-multiplayer").onclick = () => {
+    if (!$("mp-name").value) $("mp-name").value = charConfig.name || "";
+    if (!$("mp-url").value) {
+      const host = location.hostname || "localhost";
+      $("mp-url").value = (location.protocol === "https:" ? "wss://" : "ws://") + host + ":8090";
+    }
+    showScreen("screen-multiplayer");
+  };
+  $("btn-mp-back").onclick = () => showScreen("screen-title");
+  $("btn-mp-connect").onclick = () => {
+    const name = ($("mp-name").value || "Anonimo").trim();
+    const url = ($("mp-url").value || "ws://localhost:8090").trim();
+    charConfig.name = name;
+    ensureNet();
+    if (game) game.net = net;
+    net.connect(url, name, charConfig);
+    // se una partita è già in corso, entra subito nella dimensione attuale
+    if (game && game.running) net.enterDimension(game.state.dim, game.player.position.x, game.player.position.z, game.player.rotation.y);
+  };
+  $("btn-mp-disconnect").onclick = () => { if (net) net.disconnect(); UI.showMultiplayerHud(false); if (game) game.clearRemotes(); };
+
+  const chatInput = $("chat-input");
+  chatInput.addEventListener("keydown", (e) => {
+    if (e.code === "Enter") {
+      const text = chatInput.value.trim();
+      if (text && net && net.connected) { net.sendChat(text); UI.addChatMessage(charConfig.name || "Tu", escapeHtml(text)); }
+      chatInput.value = "";
+      chatInput.blur();
+      e.stopPropagation();
+    }
+  });
   $("btn-share").onclick = () => downloadShareCard();
 
   // mostra "Continua" se esiste un salvataggio

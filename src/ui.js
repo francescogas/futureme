@@ -134,6 +134,24 @@ export function setPowerups(active) {
   }
 }
 
+// ---------- Multiplayer ----------
+export function showMultiplayerHud(on) {
+  $("mp-online")?.classList.toggle("hidden", !on);
+  $("chat-box")?.classList.toggle("hidden", !on);
+}
+export function setOnlineCount(n) {
+  const el = $("mp-count"); if (el) el.textContent = n;
+}
+export function addChatMessage(who, text, system = false) {
+  const log = $("chat-log");
+  if (!log) return;
+  const el = document.createElement("div");
+  el.className = "chat-msg" + (system ? " system" : "");
+  el.innerHTML = system ? text : `<span class="who">${who}:</span>${text}`;
+  log.appendChild(el);
+  while (log.children.length > 6) log.removeChild(log.firstChild);
+}
+
 export function setWeather(emoji, name) {
   const el = $("hud-weather");
   if (!el) return;

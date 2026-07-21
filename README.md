@@ -5,7 +5,7 @@ Un videogioco d'avventura futuristico **3D giocabile nel browser**, costruito co
 paralleli — **Terra 🌍, Luna 🌙 e Sole ☀️** — attraverso portali misteriosi, e
 salva la realtà dall'implosione ritrovando (e trasformando) il tuo **io parallelo**.
 
-## ▶️ Come giocare
+## ▶️ Come giocare (single-player)
 
 Non serve nessuna installazione: il gioco è completamente autonomo (Three.js è
 incluso nel repository, funziona anche **offline**).
@@ -19,6 +19,27 @@ python3 -m http.server 8000
 ```
 
 In alternativa qualsiasi server statico (`npx serve`, estensione "Live Server" di VS Code, ecc.).
+
+## 🌐 Multiplayer (gioca con altri in tempo reale)
+
+Il gioco include un **server multiplayer** (WebSocket) opzionale: più persone si
+connettono e si vedono muovere, si incontrano e **chattano** nella stessa
+dimensione, in tempo reale. Il single-player continua a funzionare anche senza.
+
+```bash
+npm install        # installa la dipendenza 'ws' (solo la prima volta)
+node server.js     # avvia il server multiplayer sulla porta 8090
+```
+
+Poi, con il gioco aperto nel browser: **Menu → 🌐 Multiplayer**, inserisci un
+nome e l'indirizzo del server (di default `ws://localhost:8090`) e premi
+**Connetti**. Gli altri giocatori usano lo stesso indirizzo — sulla stessa rete
+il tuo IP locale, oppure il tuo IP/hostname pubblico (con la porta 8090
+raggiungibile). I giocatori sono raggruppati per **dimensione**: vedi e chatti
+con chi è nel tuo stesso mondo (Terra/Luna/Sole).
+
+> Per un deploy pubblico basta far girare `server.js` su un host raggiungibile
+> (o dietro un reverse proxy con TLS, usando `wss://`).
 
 ## 🎮 Comandi
 
@@ -37,6 +58,17 @@ Volume, sensibilità della telecamera ed effetti grafici sono regolabili in
 Su **smartphone/tablet** compaiono automaticamente un **joystick** (in basso a
 sinistra) per muoverti e un pulsante **E** per interagire; trascina sul resto
 dello schermo per ruotare la telecamera.
+
+## 🌐 Multiplayer
+
+- **Presenza in tempo reale**: vedi gli altri giocatori muoversi nel tuo stesso
+  mondo, con **avatar personalizzati** (specie/abiti) e **targhetta col nome**.
+- **Stanze per dimensione**: incontri chi è nella tua stessa dimensione; passando
+  da un mondo all'altro cambi "stanza".
+- **Chat in tempo reale** tra i giocatori della stessa dimensione.
+- **Contatore giocatori online** nell'HUD.
+- Server Node/WebSocket incluso (`server.js`); il single-player resta disponibile
+  anche offline.
 
 ## 🎮 Meta-gioco e coinvolgimento (stile giochi popolari)
 
@@ -178,6 +210,9 @@ src/
   touch.js          # controlli touch per mobile (joystick + azione)
   weather.js        # meteo dinamico (pioggia, neve, nebbia, sabbia, nuvole)
   progression.js    # profilo persistente: monete, XP, gradi, sblocchi, achievement, daily
+  net.js            # networking client multiplayer (WebSocket)
+server.js           # server multiplayer Node/WebSocket (stanze per dimensione, chat)
+package.json        # dipendenza 'ws' e script di avvio del server
 ```
 
 ## 🛠️ Note tecniche

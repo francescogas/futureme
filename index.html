@@ -70,6 +70,14 @@
       <canvas id="minimap" width="150" height="150"></canvas>
       <div class="minimap-label">RADAR</div>
     </div>
+
+    <div id="mp-online" class="mp-online hidden">🌐 <span id="mp-count">1</span> online</div>
+    <div id="chat-box" class="chat-box hidden">
+      <div id="chat-log" class="chat-log"></div>
+      <div class="chat-input-row">
+        <input id="chat-input" class="chat-input" maxlength="140" placeholder="Scrivi un messaggio... (Invio)" />
+      </div>
+    </div>
   </div>
 
   <!-- ===================== Toast / messaggi ===================== -->
@@ -117,6 +125,7 @@
         <button id="btn-shop" class="ghost-btn">🛒 Negozio</button>
         <button id="btn-achievements" class="ghost-btn">🏆 Obiettivi</button>
         <button id="btn-leaderboard" class="ghost-btn">📊 Classifica</button>
+        <button id="btn-multiplayer" class="ghost-btn">🌐 Multiplayer</button>
         <button id="btn-settings" class="ghost-btn">⚙️ Impostazioni</button>
         <button id="btn-howto" class="ghost-btn">Come si gioca</button>
         <button id="btn-story" class="ghost-btn">La storia</button>
@@ -231,6 +240,29 @@
       <p class="muted">Potrai viaggiare tra i mondi attraverso i portali.</p>
       <div class="dim-cards" id="dim-cards"></div>
       <button id="btn-dimension-back" class="ghost-btn">Indietro</button>
+    </div>
+  </div>
+
+  <!-- ===================== MULTIPLAYER ===================== -->
+  <div id="screen-multiplayer" class="overlay hidden">
+    <div class="panel">
+      <h2>🌐 Multiplayer</h2>
+      <p class="muted">Gioca insieme ad altri: vi vedrete muovere e potrete chattare
+        nella stessa dimensione, in tempo reale.</p>
+      <div class="mp-field">
+        <label>Il tuo nome</label>
+        <input id="mp-name" class="text-input" maxlength="16" placeholder="Il tuo nome" />
+      </div>
+      <div class="mp-field">
+        <label>Indirizzo del server</label>
+        <input id="mp-url" class="text-input" placeholder="ws://localhost:8090" />
+      </div>
+      <div class="mp-status" id="mp-status">Non connesso</div>
+      <button id="btn-mp-connect" class="big-btn">Connetti</button>
+      <button id="btn-mp-disconnect" class="ghost-btn hidden">Disconnetti</button>
+      <button id="btn-mp-back" class="ghost-btn">Indietro</button>
+      <p class="muted mp-hint">Serve un server in ascolto: <code>npm install &amp;&amp; node server.js</code>.
+        Gli amici usano lo stesso indirizzo (o il tuo IP pubblico).</p>
     </div>
   </div>
 

@@ -36,6 +36,8 @@ export class Game {
     this.shockwaves = [];
     this.sensitivity = 1;
     this.lowEffects = false;
+    this.net = null;              // modulo di rete (multiplayer, opzionale)
+    this.remotes = new Map();     // id -> { group, parts, tx, tz, tr, walk, label }
     this.combo = 0;
     this.comboTimer = 0;
     this.trailTimer = 0;
@@ -65,6 +67,9 @@ export class Game {
 
   _initInput() {
     window.addEventListener("keydown", (e) => {
+      // non catturare i tasti mentre si scrive (chat, campi di testo)
+      const tag = e.target && e.target.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA") return;
       this.keys.add(e.code);
       if ((e.code === "KeyE" || e.code === "Space") && this.running) { e.preventDefault(); this._tryInteract(); }
     });
@@ -162,6 +167,12 @@ export class Game {
     this.player.position.set(0, 0, 8);
     this.yaw = 0;
     this.scene.add(this.player);
+
+    // multiplayer: entra nella stanza della nuova dimensione
+    this.clearRemotes();
+    if (this.net && this.net.connected) {
+      this.net.enterDimension(dimId, this.player.position.x, this.player.position.z, this.player.rotation.y);
+    }
 
     this._setObjectiveForDim(dimId);
     if (this.audio) this.audio.setAmbient(dimId);
@@ -435,6 +446,71 @@ export class Game {
     this.lowEffects = b;
     this.renderer.setPixelRatio(b ? 1 : Math.min(window.devicePixelRatio, 2));
     this.renderer.shadowMap.enabled = !b;
+  }
+
+  // ---------- Multiplayer: avatar remoti ----------
+  _makeNameSprite(name) {
+    const c = document.createElement("canvas");
+    c.width = 256; c.height = 64;
+    const ctx = c.getContext("2d");
+    ctx.font = "bold 30px Trebuchet MS, sans-serif";
+    ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillStyle = "rgba(8,10,24,0.7)";
+    const w = ctx.measureText(name).width + 26;
+    ctx.fillRect((256 - w) / 2, 10, w, 44);
+    ctx.strokeStyle = "#4df3ff"; ctx.lineWidth = 2; ctx.strokeRect((256 - w) / 2, 10, w, 44);
+    ctx.fillStyle = "#eaf2ff"; ctx.fillText(name, 128, 34);
+    const tex = new THREE.CanvasTexture(c);
+    const spr = new THREE.Sprite(new THREE.SpriteMaterial({ map: tex, transparent: true, depthTest: false }));
+    spr.scale.set(2.6, 0.65, 1);
+    spr.position.y = 2.7;
+    return spr;
+  }
+
+  addRemote(peer) {
+    if (this.remotes.has(peer.id)) return;
+    let built;
+    try { built = buildAvatar(peer.char || {}); } catch (e) { built = buildAvatar({}); }
+    const g = built.group;
+    g.position.set(peer.x || 0, 0, peer.z || 0);
+    g.rotation.y = peer.ry || 0;
+    const label = this._makeNameSprite(peer.name || "Player");
+    g.add(label);
+    this.scene.add(g);
+    this.remotes.set(peer.id, { group: g, parts: built.parts, tx: g.position.x, tz: g.position.z, tr: g.rotation.y, walk: 0, label });
+  }
+  moveRemote(id, d) {
+    const r = this.remotes.get(id);
+    if (!r) return;
+    const dx = d.x - r.tx, dz = d.z - r.tz;
+    r.walk = Math.min(1, Math.hypot(dx, dz) * 6);
+    r.tx = d.x; r.tz = d.z; r.tr = d.ry;
+  }
+  removeRemote(id) {
+    const r = this.remotes.get(id);
+    if (!r) return;
+    this.scene.remove(r.group);
+    this.remotes.delete(id);
+  }
+  clearRemotes() {
+    for (const [, r] of this.remotes) this.scene.remove(r.group);
+    this.remotes.clear();
+  }
+  onWelcome(peers) {
+    this.clearRemotes();
+    for (const p of peers) this.addRemote(p);
+  }
+  _updateRemotes(dt, t) {
+    for (const [, r] of this.remotes) {
+      r.group.position.x += (r.tx - r.group.position.x) * Math.min(1, dt * 12);
+      r.group.position.z += (r.tz - r.group.position.z) * Math.min(1, dt * 12);
+      let dr = r.tr - r.group.rotation.y;
+      while (dr > Math.PI) dr -= Math.PI * 2;
+      while (dr < -Math.PI) dr += Math.PI * 2;
+      r.group.rotation.y += dr * Math.min(1, dt * 12);
+      animateAvatar(r.parts, t, r.walk * 0.6);
+      r.walk *= 0.9;
+    }
   }
 
   // ---------- Interazione (tasto E) ----------
@@ -814,6 +890,7 @@ export class Game {
     if (this.weather) this.weather.update(dt, t);
     if (this.bursts.length) this._updateBursts(dt);
     if (this.shockwaves.length) this._updateShockwaves(dt);
+    if (this.remotes.size) this._updateRemotes(dt, t);
     if (this.alterBeam) this.alterBeam.material.opacity = 0.2 + Math.sin(t * 3) * 0.12;
     this.minimap.render(this);
 
@@ -878,6 +955,9 @@ export class Game {
     }
 
     animateAvatar(this.playerParts, t, moving);
+
+    // sincronizzazione multiplayer
+    if (this.net) this.net.sendMove(this.player.position.x, this.player.position.z, this.player.rotation.y, dt);
 
     // scia luminosa cosmetica
     if (this.trailCfg && this.trailCfg.color != null) {
