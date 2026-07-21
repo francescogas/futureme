@@ -1,0 +1,13 @@
+{
+  "name": "futureme",
+  "version": "1.0.0",
+  "description": "FUTUREME — gioco 3D multidimensionale con multiplayer opzionale",
+  "type": "module",
+  "scripts": {
+    "server": "node server.js",
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "ws": "^8.21.1"
+  }
+}

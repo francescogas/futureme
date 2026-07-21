@@ -19,12 +19,19 @@
 
   <!-- ===================== HUD (in-game) ===================== -->
   <div id="hud" class="hidden">
+    <div id="vignette"></div>
+    <div id="damage-flash"></div>
     <div class="hud-top">
       <div class="hud-panel">
         <div class="hud-dim"><span id="hud-dim-icon">🌍</span> <span id="hud-dim-name">TERRA</span></div>
-        <div class="hud-city" id="hud-city">Roma</div>
+        <div class="hud-city"><span id="hud-city">Roma</span> <span id="hud-weather" title="Meteo"></span></div>
+        <div class="hud-profile">
+          <span class="hud-coins">🪙 <b id="hud-coins">0</b></span>
+          <span class="hud-rank">⭐ <b id="hud-rank">1</b></span>
+        </div>
+        <div class="xpbar"><div id="xpbar-fill"></div></div>
       </div>
-      <div class="hud-panel hud-center">
+      <div class="hud-panel hud-center" id="hud-center-panel">
         <div class="hud-stat"><span class="lbl">SFIDE RIMANENTI</span><span class="val" id="hud-challenges">1000</span></div>
         <div class="hud-stat small"><span class="lbl">LIVELLO</span><span class="val" id="hud-level">1</span></div>
       </div>
@@ -34,17 +41,86 @@
       </div>
     </div>
 
+    <div class="hud-wave hidden" id="hud-wave">🌊 ONDATA <b id="wave-n">1</b> · <span id="wave-enemies">0</span> nemici</div>
+
+    <div class="hud-boss hidden" id="hud-boss">
+      <div class="boss-name" id="boss-name">👹 GUARDIANO DELLA LUNA</div>
+      <div class="boss-bar"><div class="boss-bar-fill" id="boss-bar-fill"></div></div>
+    </div>
+
     <div class="hud-inventory" id="hud-inventory"></div>
 
+    <div id="tutorial-callout" class="tutorial-callout hidden">
+      <div class="tc-text" id="tc-text"></div>
+      <div class="tc-actions">
+        <button id="tc-next" class="tc-btn">Avanti →</button>
+        <button id="tc-skip" class="tc-skip">Salta il tutorial</button>
+      </div>
+    </div>
+
     <div class="hud-objective" id="hud-objective">Obiettivo: esplora e raccogli chiavi e passaporti.</div>
+    <div class="hud-quest hidden" id="hud-quest"></div>
 
     <div class="hud-hint" id="hud-hint"></div>
+    <div class="hud-powerups" id="hud-powerups"></div>
+    <div class="hud-combo" id="hud-combo"></div>
+    <div class="coin-popups" id="coin-popups"></div>
+    <div class="ach-toast hidden" id="ach-toast"></div>
 
     <button id="btn-pause" class="corner-btn" title="Pausa">⏸</button>
+    <button id="btn-mute" class="corner-btn" title="Audio on/off" style="right:66px;">🔊</button>
+    <button id="btn-emote" class="corner-btn" title="Emote (T)" style="right:118px;">🙂</button>
+    <button id="btn-map" class="corner-btn" title="Mappa (M)" style="right:170px;">🗺️</button>
+
+    <div id="fullmap" class="fullmap hidden">
+      <div class="fullmap-inner">
+        <canvas id="fullmap-canvas" width="640" height="640"></canvas>
+        <div class="fullmap-legend">
+          🟢 Giocatori · 🟡 Chiavi · 🔵 Sfera · 🟣 Power-up/NPC · 🔴 Mostri/Boss · 🔷 Portali
+        </div>
+        <button id="btn-map-close" class="big-btn">Chiudi (M)</button>
+      </div>
+    </div>
+    <div id="emote-bar" class="emote-bar hidden"></div>
+
+    <!-- Controlli touch (mobile) -->
+    <div id="touch-controls" class="hidden">
+      <div id="joystick"><div id="joystick-knob"></div></div>
+      <button id="btn-action">E</button>
+    </div>
+
+    <div class="minimap-wrap">
+      <canvas id="minimap" width="150" height="150"></canvas>
+      <div class="minimap-label">RADAR</div>
+    </div>
+
+    <div id="hud-sphere" class="hud-sphere hidden">
+      <span class="hs-icon">🔮</span>
+      <div class="hs-body">
+        <div class="hs-bar"><div class="hs-fill" id="hs-fill"></div></div>
+        <div class="hs-label" id="hs-label">ATTIVA · Q</div>
+      </div>
+    </div>
+    <button id="btn-sphere" class="corner-btn hidden" title="Sfera del Veggente (Q)" style="right:14px; top:66px;">🔮</button>
+
+    <div id="mp-online" class="mp-online hidden">🌐 <span id="mp-count">1</span> online</div>
+    <div id="chat-box" class="chat-box hidden">
+      <div id="chat-log" class="chat-log"></div>
+      <div class="chat-input-row">
+        <input id="chat-input" class="chat-input" maxlength="140" placeholder="Scrivi un messaggio... (Invio)" />
+      </div>
+    </div>
   </div>
 
   <!-- ===================== Toast / messaggi ===================== -->
   <div id="toast" class="hidden"></div>
+
+  <!-- ===================== Banner d'arrivo città/dimensione ===================== -->
+  <div id="city-banner" class="hidden">
+    <div class="cb-sub" id="cb-sub"></div>
+    <div class="cb-title" id="cb-title"></div>
+    <div class="cb-landmark" id="cb-landmark"></div>
+  </div>
 
   <!-- ===================== Dialogo NPC ===================== -->
   <div id="dialog" class="overlay hidden">
@@ -57,13 +133,91 @@
 
   <!-- ===================== TITOLO ===================== -->
   <div id="screen-title" class="overlay">
+    <div class="title-profilebar">
+      <span class="tp-item">🪙 <b id="tp-coins">0</b></span>
+      <span class="tp-item">⭐ Grado <b id="tp-rank">1</b></span>
+      <span class="tp-item">🏆 <b id="tp-ach">0</b>/<span id="tp-ach-total">10</span></span>
+    </div>
     <div class="title-wrap">
       <h1 class="game-logo">FUTURE<span>ME</span></h1>
       <p class="tagline">Le Tre Dimensioni · Terra · Luna · Sole</p>
       <p class="subtitle">Trova il tuo io negli altri mondi. Salva la realtà dall'implosione.</p>
+      <div id="daily-banner" class="daily-banner hidden">
+        <div class="db-left"><span class="db-icon" id="db-icon">🎯</span></div>
+        <div class="db-mid">
+          <div class="db-title">Sfida del Giorno · <span id="db-name">—</span></div>
+          <div class="db-desc" id="db-desc"></div>
+          <div class="db-goal" id="db-goal"></div>
+        </div>
+        <button id="btn-daily" class="db-btn">Gioca</button>
+      </div>
+      <button id="btn-continue" class="big-btn hidden">↻ CONTINUA</button>
       <button id="btn-start" class="big-btn">▶ INIZIA L'AVVENTURA</button>
-      <button id="btn-howto" class="ghost-btn">Come si gioca</button>
+      <button id="btn-survival" class="big-btn">🌊 SOPRAVVIVENZA</button>
+      <div class="title-row">
+        <button id="btn-shop" class="ghost-btn">🛒 Negozio</button>
+        <button id="btn-upgrades" class="ghost-btn">⬆️ Potenziamenti</button>
+        <button id="btn-achievements" class="ghost-btn">🏆 Obiettivi</button>
+        <button id="btn-leaderboard" class="ghost-btn">📊 Classifica</button>
+        <button id="btn-multiplayer" class="ghost-btn">🌐 Multiplayer</button>
+        <button id="btn-settings" class="ghost-btn">⚙️ Impostazioni</button>
+        <button id="btn-howto" class="ghost-btn">Come si gioca</button>
+        <button id="btn-story" class="ghost-btn">La storia</button>
+      </div>
+      <div id="best-stats" class="best-stats"></div>
       <div class="credits">Un prototipo giocabile — muoviti con <b>WASD</b> / frecce · <b>Mouse</b> per guardare</div>
+    </div>
+  </div>
+
+  <!-- ===================== NEGOZIO ===================== -->
+  <div id="screen-shop" class="overlay hidden">
+    <div class="panel wide">
+      <div class="shop-head">
+        <h2>🛒 Negozio</h2>
+        <span class="shop-coins">🪙 <b id="shop-coins">0</b></span>
+      </div>
+      <p class="muted">Guadagna monete giocando e sblocca stili e scie luminose.</p>
+      <h3 class="shop-sec">Stili di abiti</h3>
+      <div class="shop-grid" id="shop-outfits"></div>
+      <h3 class="shop-sec">Scie luminose</h3>
+      <div class="shop-grid" id="shop-trails"></div>
+      <button id="btn-shop-back" class="big-btn">Indietro</button>
+    </div>
+  </div>
+
+  <!-- ===================== POTENZIAMENTI ===================== -->
+  <div id="screen-upgrades" class="overlay hidden">
+    <div class="panel wide">
+      <div class="shop-head">
+        <h2>⬆️ Potenziamenti permanenti</h2>
+        <span class="shop-coins">🪙 <b id="upg-coins">0</b></span>
+      </div>
+      <p class="muted">Bonus permanenti che valgono in tutte le partite. Guadagna monete giocando.</p>
+      <div class="upg-grid" id="upg-grid"></div>
+      <button id="btn-upg-back" class="big-btn">Indietro</button>
+    </div>
+  </div>
+
+  <!-- ===================== OBIETTIVI ===================== -->
+  <div id="screen-achievements" class="overlay hidden">
+    <div class="panel wide">
+      <h2>🏆 Obiettivi</h2>
+      <p class="muted">Sblocca ricompense e mostra le tue imprese.</p>
+      <div class="ach-grid" id="ach-grid"></div>
+      <button id="btn-ach-back" class="big-btn">Indietro</button>
+    </div>
+  </div>
+
+  <!-- ===================== INTRO CINEMATOGRAFICA ===================== -->
+  <div id="screen-intro" class="overlay hidden">
+    <div class="intro-stars"></div>
+    <div class="intro-wrap">
+      <div class="intro-slide" id="intro-slide"></div>
+      <div class="intro-actions">
+        <button id="btn-intro-next" class="big-btn">Avanti →</button>
+        <button id="btn-intro-skip" class="ghost-btn">Salta l'introduzione</button>
+      </div>
+      <div class="intro-dots" id="intro-dots"></div>
     </div>
   </div>
 
@@ -76,7 +230,7 @@
         <li><b>Mouse</b> — ruota la telecamera · <b>Shift</b> — corri</li>
         <li><b>E / Spazio</b> — interagisci con persone e portali</li>
         <li><b>🔑 Chiavi & 🛂 Passaporti</b> — sbloccano portali misteriosi. Non saprai dove ti porteranno!</li>
-        <li><b>🌍 Terra</b> — cammina fra le città del mondo, raccogli indizi.</li>
+        <li><b>🌍 Terra</b> — cammina fra le città reali del mondo (Roma col Colosseo, Tokyo con la sua torre neon, New York coi grattacieli e la Statua della Libertà, Venezia coi canali e le gondole, Parigi con la Torre Eiffel, Il Cairo con le piramidi) e raccogli indizi.</li>
         <li><b>🌙 Luna</b> — sempre notte. Zombie, vampiri e lupi mannari. Difenditi con 🧄 aglio, ✝️ croci, ⚙️ argento e 🔦 torce. Chiudi i portali prima che i mostri raggiungano la Terra.</li>
         <li><b>☀️ Sole</b> — sempre giorno. Raccogli gli ingredienti della <b>pozione magica</b>.</li>
         <li><b>Il tuo Io parallelo</b> — potresti incontrarlo. Sulla Luna è prigioniero e forse è diventato cattivo. Solo la pozione può salvarlo e portarlo nella dimensione Sole.</li>
@@ -136,13 +290,73 @@
     </div>
   </div>
 
+  <!-- ===================== MULTIPLAYER ===================== -->
+  <div id="screen-multiplayer" class="overlay hidden">
+    <div class="panel">
+      <h2>🌐 Multiplayer</h2>
+      <p class="muted">Gioca insieme ad altri: vi vedrete muovere e potrete chattare
+        nella stessa dimensione, in tempo reale.</p>
+      <div class="mp-field">
+        <label>Il tuo nome</label>
+        <input id="mp-name" class="text-input" maxlength="16" placeholder="Il tuo nome" />
+      </div>
+      <div class="mp-field">
+        <label>Indirizzo del server</label>
+        <input id="mp-url" class="text-input" placeholder="ws://localhost:8090" />
+      </div>
+      <div class="mp-status" id="mp-status">Non connesso</div>
+      <button id="btn-mp-connect" class="big-btn">Connetti</button>
+      <button id="btn-mp-disconnect" class="ghost-btn hidden">Disconnetti</button>
+      <button id="btn-mp-back" class="ghost-btn">Indietro</button>
+      <p class="muted mp-hint">Serve un server in ascolto: <code>npm install &amp;&amp; node server.js</code>.
+        Gli amici usano lo stesso indirizzo (o il tuo IP pubblico).</p>
+    </div>
+  </div>
+
+  <!-- ===================== IMPOSTAZIONI ===================== -->
+  <div id="screen-settings" class="overlay hidden">
+    <div class="panel">
+      <h2>⚙️ Impostazioni</h2>
+      <div class="setting-row">
+        <label for="set-volume">🔊 Volume</label>
+        <input type="range" id="set-volume" min="0" max="100" value="50" />
+        <span id="set-volume-val">50%</span>
+      </div>
+      <div class="setting-row">
+        <label for="set-sens">🎯 Sensibilità telecamera</label>
+        <input type="range" id="set-sens" min="30" max="200" value="100" />
+        <span id="set-sens-val">1.0×</span>
+      </div>
+      <div class="setting-row">
+        <label for="set-effects">✨ Effetti ridotti (prestazioni)</label>
+        <input type="checkbox" id="set-effects" />
+      </div>
+      <button id="btn-settings-back" class="big-btn">Indietro</button>
+    </div>
+  </div>
+
+  <!-- ===================== CLASSIFICA ===================== -->
+  <div id="screen-leaderboard" class="overlay hidden">
+    <div class="panel">
+      <h2>📊 Classifica</h2>
+      <p class="muted">I tuoi migliori risultati. Batti il tuo record!</p>
+      <div class="lb-filters" id="lb-filters">
+        <button class="lb-tab active" data-lbfilter="all">Tutte</button>
+        <button class="lb-tab" data-lbfilter="adventure">🏆 Avventura</button>
+        <button class="lb-tab" data-lbfilter="survival">🌊 Sopravvivenza</button>
+      </div>
+      <div class="lb-list" id="lb-list"></div>
+      <button id="btn-lb-back" class="big-btn">Indietro</button>
+    </div>
+  </div>
+
   <!-- ===================== MORTE ===================== -->
   <div id="screen-death" class="overlay hidden">
     <div class="panel center">
       <h2 class="danger">SEI CADUTO</h2>
       <p id="death-text">I mondi vacillano... ma non è finita.</p>
-      <p class="big-number">+100 <span class="muted">sfide</span></p>
-      <p class="muted">Sfide rimanenti: <b id="death-challenges">1100</b></p>
+      <p class="big-number" id="death-bignum">+100 <span class="muted">sfide</span></p>
+      <p class="muted" id="death-remain">Sfide rimanenti: <b id="death-challenges">1100</b></p>
       <button id="btn-respawn" class="big-btn">Rialzati</button>
     </div>
   </div>
@@ -152,7 +366,11 @@
     <div class="panel center">
       <h2 class="glow">HAI SALVATO I MONDI</h2>
       <p id="victory-text"></p>
-      <button id="btn-restart" class="big-btn">Gioca ancora</button>
+      <canvas id="share-card" width="600" height="315" class="share-card"></canvas>
+      <div class="victory-row">
+        <button id="btn-share" class="big-btn">📸 Scarica la card</button>
+        <button id="btn-restart" class="ghost-btn">Gioca ancora</button>
+      </div>
     </div>
   </div>
 
