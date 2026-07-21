@@ -450,14 +450,38 @@ h2 { margin-bottom: 14px; font-size: 26px; }
   border-radius: 50%; background: linear-gradient(135deg, var(--neon), var(--neon2));
   box-shadow: 0 4px 16px rgba(77,243,255,0.5);
 }
-#btn-action {
-  position: absolute; right: 40px; bottom: 200px; width: 84px; height: 84px;
-  border-radius: 50%; font-size: 26px; font-weight: 800; color: #041018;
-  background: linear-gradient(135deg, var(--gold), #ff9f43);
-  border: none; pointer-events: auto; touch-action: none;
-  box-shadow: 0 4px 20px rgba(255,211,92,0.5);
+/* Cluster di pulsanti azione (stile mobile dei giochi popolari) */
+.touch-btns {
+  position: absolute; right: 20px; bottom: 30px;
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
+  pointer-events: none;
 }
-#btn-action:active { transform: scale(0.94); }
+.touch-btns .tb-row { display: flex; gap: 14px; justify-content: center; }
+.touch-btns .tb-row-top { gap: 10px; }
+.tb {
+  pointer-events: auto; touch-action: none; border: none; cursor: pointer;
+  border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  color: #eaf2ff; -webkit-user-select: none; user-select: none;
+  transition: transform 0.06s;
+}
+.tb:active { transform: scale(0.9); filter: brightness(1.2); }
+.tb-primary {
+  width: 92px; height: 92px; font-size: 40px;
+  background: radial-gradient(circle at 35% 30%, #ff6a5a, #d93a2b);
+  box-shadow: 0 4px 22px rgba(217,58,43,0.55), inset 0 -3px 8px rgba(0,0,0,0.3);
+  margin-top: 2px;
+}
+.tb-act {
+  width: 66px; height: 66px; font-size: 27px;
+  background: radial-gradient(circle at 35% 30%, rgba(60,80,130,0.95), rgba(24,32,60,0.95));
+  border: 2px solid var(--panel-border);
+  box-shadow: 0 3px 14px rgba(0,0,0,0.4);
+}
+#tb-jump { background: radial-gradient(circle at 35% 30%, #4df3ff, #2b8fb0); color: #041018; }
+.tb-mini {
+  width: 52px; height: 52px; font-size: 22px;
+  background: rgba(12,16,34,0.7); border: 1.5px solid var(--panel-border);
+}
 
 .hud-wave {
   position: absolute; top: 96px; left: 50%; transform: translateX(-50%);
@@ -586,4 +610,22 @@ h2 { margin-bottom: 14px; font-size: 26px; }
   .creator-right { min-height: 260px; }
   .dim-cards { grid-template-columns: 1fr; }
   .hud-top { flex-direction: column; }
+  /* Radar spostato in alto a destra per non coprire i pulsanti d'azione */
+  .minimap-wrap { top: 62px; bottom: auto; right: 8px; }
+  #minimap { width: 92px; height: 92px; }
+  .minimap-label { display: none; }
+  #btn-sphere { display: none; }            /* su mobile si usa il pulsante 🔮 del cluster */
+  .touch-btns { right: 14px; bottom: 22px; }
+  /* HUD più compatto e leggibile su schermi piccoli */
+  .hud-panel { padding: 6px 10px; font-size: 12px; }
+  .hud-objective { font-size: 12px; bottom: 150px; left: 50%; transform: translateX(-50%); max-width: 74vw; text-align: center; }
+  .hud-inventory { transform: scale(0.9); transform-origin: left center; }
+}
+
+/* Su schermi molto stretti riduci ancora i pulsanti */
+@media (max-width: 420px) {
+  .tb-primary { width: 78px; height: 78px; font-size: 34px; }
+  .tb-act { width: 58px; height: 58px; font-size: 23px; }
+  .tb-mini { width: 46px; height: 46px; font-size: 19px; }
+  #joystick { width: 104px; height: 104px; left: 18px; bottom: 20px; }
 }

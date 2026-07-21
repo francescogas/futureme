@@ -47,6 +47,11 @@ export class Game {
     this.sphere = { has: false, energy: 0, active: false }; // Sfera del Veggente
     this.mode = null;             // null = avventura; "survival" = ondate
     this.survival = null;
+    // fisica salto + combattimento + telecamere
+    this.velY = 0; this.onGround = true;
+    this.attackTimer = 0; this.attackCd = 0;
+    this.camMode = 0;             // 0 = terza persona, 1 = prima persona, 2 = lontana
+    this.lookId = null;           // pointerId attivo per ruotare la telecamera (multi-touch)
 
     this._initRenderer();
     this._initInput();
@@ -76,23 +81,78 @@ export class Game {
       // non catturare i tasti mentre si scrive (chat, campi di testo)
       const tag = e.target && e.target.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA") return;
+      if (e.repeat) return;
       this.keys.add(e.code);
-      if ((e.code === "KeyE" || e.code === "Space") && this.running) { e.preventDefault(); this._tryInteract(); }
-      if (e.code === "KeyQ" && this.running) { e.preventDefault(); this.toggleSphere(); }
-      if (e.code === "KeyM" && this.running) { e.preventDefault(); this.toggleMap(); }
+      if (!this.running) return;
+      if (e.code === "KeyE") { e.preventDefault(); this._tryInteract(); }
+      if (e.code === "Space") { e.preventDefault(); this.jump(); }
+      if (e.code === "KeyF" || e.code === "KeyJ") { e.preventDefault(); this.attack(); }
+      if (e.code === "KeyV") { e.preventDefault(); this.cycleCamera(); }
+      if (e.code === "KeyQ") { e.preventDefault(); this.toggleSphere(); }
+      if (e.code === "KeyM") { e.preventDefault(); this.toggleMap(); }
     });
     window.addEventListener("keyup", (e) => this.keys.delete(e.code));
 
     const c = this.canvas;
-    c.addEventListener("pointerdown", (e) => { this.dragging = true; this._lastX = e.clientX; this._lastY = e.clientY; });
-    window.addEventListener("pointerup", () => { this.dragging = false; });
+    // ruota la telecamera trascinando: gestione multi-touch tramite pointerId,
+    // così joystick e pulsanti (che catturano i propri pointer) non interferiscono.
+    c.addEventListener("pointerdown", (e) => {
+      if (this.lookId !== null) return;      // già un dito che guarda
+      this.lookId = e.pointerId;
+      this._lastX = e.clientX; this._lastY = e.clientY;
+    });
+    const endLook = (e) => { if (e.pointerId === this.lookId) this.lookId = null; };
+    window.addEventListener("pointerup", endLook);
+    window.addEventListener("pointercancel", endLook);
     window.addEventListener("pointermove", (e) => {
-      if (!this.dragging) return;
+      if (e.pointerId !== this.lookId) return;
       const dx = e.clientX - this._lastX, dy = e.clientY - this._lastY;
       this._lastX = e.clientX; this._lastY = e.clientY;
       this.yaw -= dx * 0.005 * this.sensitivity;
-      this.pitch = Math.max(0.05, Math.min(1.1, this.pitch + dy * 0.004 * this.sensitivity));
+      this.pitch = Math.max(0.05, Math.min(1.2, this.pitch + dy * 0.004 * this.sensitivity));
     });
+  }
+
+  // ---------- Salto ----------
+  jump() {
+    if (!this.running || !this.onGround) return;
+    this.velY = 7.2;
+    this.onGround = false;
+    if (this.audio) this.audio.jump();
+  }
+
+  // ---------- Attacco corpo a corpo (pugno) ----------
+  attack() {
+    if (!this.running || this.attackCd > 0) return;
+    this.attackCd = 0.45;
+    this.attackTimer = 0.28;     // durata dell'animazione del braccio
+    if (this.audio) this.audio.swing();
+    const px = this.player.position.x, pz = this.player.position.z;
+    const reach = 3.2, reach2 = reach * reach;
+    // direzione in cui guarda il giocatore
+    const fx = Math.sin(this.player.rotation.y), fz = Math.cos(this.player.rotation.y);
+    // Boss davanti e vicino
+    if (this.boss && dist2(px, pz, this.boss.position.x, this.boss.position.z) < 12) {
+      this._meleeHitBoss();
+      return;
+    }
+    // colpisci il mostro più vicino entro il raggio e grossomodo davanti
+    let hit = null, hd = reach2;
+    for (const m of this.objects.monsters) {
+      const d = dist2(px, pz, m.position.x, m.position.z);
+      if (d > hd) continue;
+      const toX = m.position.x - px, toZ = m.position.z - pz;
+      const dot = (toX * fx + toZ * fz) / (Math.hypot(toX, toZ) || 1);
+      if (dot > 0.15) { hd = d; hit = m; }   // davanti (cono ~160°)
+    }
+    if (hit) { this._meleeBanish(hit); this.shake = Math.max(this.shake, 0.18); }
+  }
+
+  cycleCamera() {
+    this.camMode = (this.camMode + 1) % 3;
+    if (this.player) this.player.visible = this.camMode !== 1;
+    const names = ["Terza persona", "Prima persona", "Vista ampia"];
+    UI.hint("🎥 " + names[this.camMode]);
   }
 
   // ---------- Nuova partita (o ripresa da salvataggio) ----------
@@ -189,6 +249,8 @@ export class Game {
     // posiziona il giocatore al centro
     this.player.position.set(0, 0, 8);
     this.yaw = 0;
+    this.velY = 0; this.onGround = true;
+    this.player.visible = this.camMode !== 1;
     this.scene.add(this.player);
 
     // multiplayer: entra nella stanza della nuova dimensione
@@ -780,9 +842,11 @@ export class Game {
     }
   }
 
-  _banishMonster(m) {
-    // in Sopravvivenza si combatte a mani libere (nessun oggetto richiesto)
-    const free = this.mode === "survival";
+  _meleeBanish(m) { this._banishMonster(m, true); }
+
+  _banishMonster(m, melee = false) {
+    // in Sopravvivenza o con un pugno (melee) si combatte a mani libere
+    const free = melee || this.mode === "survival";
     const defense = free ? null : ["torch", "silver", "cross", "garlic"].find((t) => this._hasItem(t));
     if (!free && !defense) {
       UI.openDialog("Mostro!", "Non hai armi per respingerlo! Ti serve 🔦 torcia, ⚙️ argento, ✝️ croce o 🧄 aglio.", [{ label: "Fuggi", cb: UI.closeDialog }]);
@@ -808,15 +872,17 @@ export class Game {
     this._checkDaily("banish");
     this._progress(15);
     if (this.audio) this.audio.banish();
-    UI.toast(free ? "💥 Mostro respinto!" : `💥 Mostro respinto con ${ITEMS[defense].emoji}!`, 1500);
+    UI.toast(melee ? "👊 Colpo! Mostro sconfitto!" : (free ? "💥 Mostro respinto!" : `💥 Mostro respinto con ${ITEMS[defense].emoji}!`), 1500);
     this._checkQuest();
     this.cb.onStateChange(this.state);
   }
 
   // ---------- Boss finale ----------
-  _attackBoss() {
+  _meleeHitBoss() { this._attackBoss(true); }
+
+  _attackBoss(melee = false) {
     const bossName = this.boss.userData.name;
-    const free = this.mode === "survival";
+    const free = melee || this.mode === "survival";
     const defense = free ? null : ["torch", "silver", "cross", "garlic"].find((t) => this._hasItem(t));
     if (!free && !defense) {
       UI.openDialog(bossName, "Serve un'arma per colpirlo! Raccogli 🔦 torce, ⚙️ argento, ✝️ croci o 🧄 aglio.", [{ label: "Indietro", cb: UI.closeDialog }]);
@@ -1151,7 +1217,28 @@ export class Game {
       moving = run ? 1 : 0.6;
     }
 
+    // salto e gravità (Terra/Luna/Sole: piano a y=0)
+    this.velY -= 22 * dt;
+    this.player.position.y += this.velY * dt;
+    if (this.player.position.y <= 0) {
+      this.player.position.y = 0;
+      if (!this.onGround && this.velY < -3 && this.audio) this.audio.land();
+      this.velY = 0; this.onGround = true;
+    }
+
     animateAvatar(this.playerParts, t, moving);
+
+    // animazione del pugno (sovrascrive il braccio destro durante l'attacco)
+    if (this.attackCd > 0) this.attackCd -= dt;
+    if (this.attackTimer > 0) {
+      this.attackTimer -= dt;
+      const p = 1 - Math.max(0, this.attackTimer) / 0.28;   // 0 → 1
+      const swing = Math.sin(p * Math.PI);                   // 0 → 1 → 0
+      if (this.playerParts && this.playerParts.arms) {
+        this.playerParts.arms[1].rotation.x = -swing * 1.7;
+        this.playerParts.arms[1].rotation.z = swing * 0.3;
+      }
+    }
 
     // sincronizzazione multiplayer
     if (this.net) this.net.sendMove(this.player.position.x, this.player.position.z, this.player.rotation.y, dt);
@@ -1167,13 +1254,27 @@ export class Game {
       }
     }
 
-    // camera in terza persona
-    const camDist = 7, camH = 3 + this.pitch * 4;
-    const cx = this.player.position.x - Math.sin(this.yaw) * camDist * Math.cos(this.pitch);
-    const cz = this.player.position.z - Math.cos(this.yaw) * camDist * Math.cos(this.pitch);
-    const cy = this.player.position.y + camH;
-    this.camera.position.lerp(new THREE.Vector3(cx, cy, cz), 0.15);
-    this.camera.lookAt(this.player.position.x, this.player.position.y + 1.4, this.player.position.z);
+    // ---- Telecamera: terza persona / prima persona / vista ampia ----
+    const px2 = this.player.position.x, py2 = this.player.position.y, pz2 = this.player.position.z;
+    if (this.camMode === 1) {
+      // Prima persona (stile Minecraft): occhi del personaggio
+      const hy = py2 + 1.55;
+      this.camera.position.set(px2, hy, pz2);
+      const tx = px2 + Math.sin(this.yaw) * 8;
+      const tz = pz2 + Math.cos(this.yaw) * 8;
+      const ty = hy + (0.4 - this.pitch) * 6;
+      this.camera.lookAt(tx, ty, tz);
+      // il personaggio guarda dove punta la telecamera
+      if (moving === 0) this.player.rotation.y = this.yaw;
+    } else {
+      const camDist = this.camMode === 2 ? 13 : 7;
+      const camH = (this.camMode === 2 ? 4 : 3) + this.pitch * 4;
+      const cx = px2 - Math.sin(this.yaw) * camDist * Math.cos(this.pitch);
+      const cz = pz2 - Math.cos(this.yaw) * camDist * Math.cos(this.pitch);
+      const cy = py2 + camH;
+      this.camera.position.lerp(new THREE.Vector3(cx, cy, cz), 0.15);
+      this.camera.lookAt(px2, py2 + 1.4, pz2);
+    }
     // camera shake
     if (this.shake > 0.001) {
       this.camera.position.x += (Math.random() - 0.5) * this.shake;
