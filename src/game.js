@@ -30,6 +30,8 @@ export class Game {
     this.hitCooldown = 0;
     this.interactLock = 0;
     this.touchMove = { x: 0, z: 0 };
+    this.shake = 0;
+    this.bursts = [];
 
     this._initRenderer();
     this._initInput();
@@ -129,6 +131,8 @@ export class Game {
     const weatherKey = dimId === "earth" && this.city ? this.city.id : dimId;
     this.weather = new Weather(this.scene, this.worldRoot, weatherKey, built.theme);
     UI.setWeather(this.weather.label.emoji, this.weather.label.name);
+    if (this.audio) this.audio.setWeatherAmbience(this.weather.type);
+    UI.setMood(dimId, this.weather.type);
     this._populate(dimId, level);
 
     // posiziona il giocatore al centro
@@ -146,8 +150,9 @@ export class Game {
       UI.cityBanner(DIMENSIONS[dimId].name, "Dimensione", DIMENSIONS[dimId].emoji + " " + DIMENSIONS[dimId].desc.split(".")[0]);
     }
     if (spawnMsg) UI.toast(spawnMsg);
-    else if (this.weather && this.weather.type !== "clear") {
-      setTimeout(() => UI.toast(`${this.weather.label.emoji} ${this.weather.label.name}`, 2000), 1400);
+    else if (this.weather && this.weather.type !== "clear" && this.weather.type !== "cloudy") {
+      const w = this.weather;
+      setTimeout(() => UI.toast(`${w.label.emoji} ${w.label.name}${w.mods.hint ? " — " + w.mods.hint : ""}`, 2600), 1400);
     }
   }
 
@@ -441,6 +446,7 @@ export class Game {
     this._takeItem(defense);
     const i = this.objects.monsters.indexOf(m);
     if (i >= 0) this.objects.monsters.splice(i, 1);
+    this._spawnBurst(m.position.x, 1.2, m.position.z, 0xffe9a0, 18);
     this.worldRoot.remove(m);
     this.state.monstersBanished++;
     this._progress(15);
@@ -460,11 +466,15 @@ export class Game {
     this._takeItem(defense);
     this.boss.userData.hp--;
     if (this.audio) this.audio.banish();
+    this.shake = 0.3;
+    this._spawnBurst(this.boss.position.x, 2.2, this.boss.position.z, 0xff3366, 16);
     // reazione visiva
     this.boss.position.y = 0.3;
     UI.setBossHP(Math.max(0, this.boss.userData.hp), this.boss.userData.maxHp);
     this.cb.onStateChange(this.state);
     if (this.boss.userData.hp <= 0) {
+      this._spawnBurst(this.boss.position.x, 2.5, this.boss.position.z, 0xffd35c, 40);
+      this.shake = 0.7;
       this.worldRoot.remove(this.boss);
       this.boss = null;
       UI.setBossHP(null);
@@ -570,7 +580,9 @@ export class Game {
     if (this.hitCooldown > 0) return;
     this.hitCooldown = 1.0;
     this.state.hp -= n;
+    this.shake = Math.min(0.9, 0.35 * n);
     if (this.audio) this.audio.hit();
+    UI.flashDamage();
     UI.hint("💥 Colpito!");
     this.cb.onStateChange(this.state);
     if (this.state.hp <= 0) this._die();
@@ -610,6 +622,7 @@ export class Game {
     this._updateProximityHints();
     animateWorldObjects(this.objects, t, dt);
     if (this.weather) this.weather.update(dt, t);
+    if (this.bursts.length) this._updateBursts(dt);
     if (this.alterBeam) this.alterBeam.material.opacity = 0.2 + Math.sin(t * 3) * 0.12;
     this.minimap.render(this);
 
@@ -621,7 +634,8 @@ export class Game {
 
   _updatePlayer(dt, t) {
     const run = this.keys.has("ShiftLeft") || this.keys.has("ShiftRight");
-    const speed = (run ? 9 : 5) * dt;
+    const moveMul = this.weather ? this.weather.mods.moveMul : 1;
+    const speed = (run ? 9 : 5) * moveMul * dt;
     let mx = 0, mz = 0;
     if (this.keys.has("KeyW") || this.keys.has("ArrowUp")) mz -= 1;
     if (this.keys.has("KeyS") || this.keys.has("ArrowDown")) mz += 1;
@@ -665,6 +679,13 @@ export class Game {
     const cy = this.player.position.y + camH;
     this.camera.position.lerp(new THREE.Vector3(cx, cy, cz), 0.15);
     this.camera.lookAt(this.player.position.x, this.player.position.y + 1.4, this.player.position.z);
+    // camera shake
+    if (this.shake > 0.001) {
+      this.camera.position.x += (Math.random() - 0.5) * this.shake;
+      this.camera.position.y += (Math.random() - 0.5) * this.shake;
+      this.camera.position.z += (Math.random() - 0.5) * this.shake;
+      this.shake *= 0.86;
+    }
   }
 
   _blocked(x, z) {
@@ -676,10 +697,12 @@ export class Game {
 
   _updateMonsters(dt) {
     const px = this.player.position.x, pz = this.player.position.z;
+    const rangeMul = this.weather ? this.weather.mods.monsterRangeMul : 1;
+    const sight = 22 * rangeMul;
     for (const m of this.objects.monsters) {
       const dx = px - m.position.x, dz = pz - m.position.z;
       const d = Math.hypot(dx, dz);
-      if (d < 22 && d > 0.01) {
+      if (d < sight && d > 0.01) {
         m.position.x += (dx / d) * m.userData.speed * dt;
         m.position.z += (dz / d) * m.userData.speed * dt;
         m.rotation.y = Math.atan2(dx, dz);
@@ -704,6 +727,40 @@ export class Game {
     }
   }
 
+  // ---------- Burst di scintille (feedback raccolta/eventi) ----------
+  _spawnBurst(x, y, z, color, count = 14) {
+    const geo = new THREE.BufferGeometry();
+    const pos = new Float32Array(count * 3);
+    const vel = [];
+    for (let i = 0; i < count; i++) {
+      pos[i * 3] = x; pos[i * 3 + 1] = y; pos[i * 3 + 2] = z;
+      const a = Math.random() * Math.PI * 2, e = rand(0.4, 1.6), sp = rand(2, 5);
+      vel.push([Math.cos(a) * Math.cos(e) * sp, Math.sin(e) * sp + 2, Math.sin(a) * Math.cos(e) * sp]);
+    }
+    geo.setAttribute("position", new THREE.BufferAttribute(pos, 3));
+    const pts = new THREE.Points(geo, new THREE.PointsMaterial({ color, size: 0.28, transparent: true, opacity: 1, depthWrite: false }));
+    pts.frustumCulled = false;
+    this.worldRoot.add(pts);
+    this.bursts.push({ pts, vel, life: 0, max: 0.7 });
+  }
+
+  _updateBursts(dt) {
+    for (let i = this.bursts.length - 1; i >= 0; i--) {
+      const b = this.bursts[i];
+      b.life += dt;
+      const arr = b.pts.geometry.attributes.position.array;
+      for (let j = 0; j < b.vel.length; j++) {
+        b.vel[j][1] -= 9 * dt; // gravità
+        arr[j * 3] += b.vel[j][0] * dt;
+        arr[j * 3 + 1] += b.vel[j][1] * dt;
+        arr[j * 3 + 2] += b.vel[j][2] * dt;
+      }
+      b.pts.geometry.attributes.position.needsUpdate = true;
+      b.pts.material.opacity = Math.max(0, 1 - b.life / b.max);
+      if (b.life >= b.max) { this.worldRoot.remove(b.pts); this.bursts.splice(i, 1); }
+    }
+  }
+
   _updatePickups() {
     const px = this.player.position.x, pz = this.player.position.z;
     for (let i = this.objects.items.length - 1; i >= 0; i--) {
@@ -712,6 +769,7 @@ export class Game {
         const type = it.userData.type;
         this._giveItem(type);
         if (type === "key") this.state.keysFound++;
+        this._spawnBurst(it.position.x, it.position.y, it.position.z, ITEMS[type].color);
         this.worldRoot.remove(it);
         this.objects.items.splice(i, 1);
         this._progress(10);

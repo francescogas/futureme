@@ -65,10 +65,16 @@ dello schermo per ruotare la telecamera.
   prigioniero e forse è diventato malvagio: solo la pozione del Sole può salvarlo
   e portarlo nella luce.
 - **Contatore Sfide** — parti da **1000**; ogni volta che muori aumentano di **100**.
-- **Meteo dinamico**: ogni volta che entri in una città il tempo cambia —
-  ☀️ sereno, ⛅ nuvoloso, 🌧️ pioggia, ❄️ neve, 🌫️ nebbia, 🌪️ tempesta di sabbia
-  (al Cairo) — con effetti particellari e nebbia che ne modificano l'atmosfera.
-  L'indicatore è accanto al nome della città.
+- **Meteo dinamico che cambia l'esperienza**: ogni volta che entri in una città
+  il tempo cambia — ☀️ sereno, ⛅ nuvoloso, 🌧️ pioggia, ❄️ neve, 🌫️ nebbia,
+  🌪️ tempesta di sabbia (al Cairo) — con effetti particellari, nebbia, **suono
+  ambientale** (scroscio, vento, tempesta) e **conseguenze sul gameplay**: la
+  neve e la sabbia ti rallentano, la nebbia acceca i mostri (ne riduce il raggio
+  di individuazione), la pioggia attutisce i tuoi passi. L'indicatore è accanto
+  al nome della città.
+- **Feedback immersivo**: scintille alla raccolta e alla sconfitta dei nemici,
+  **camera shake** e flash rosso quando vieni colpito, e una **vignettatura
+  d'atmosfera** che tinge lo schermo secondo dimensione e meteo.
 - **NPC a tema locale**: in ogni città incontri abitanti con nome e dialoghi
   propri (un romano, un veneziano, un parigino, un newyorkese, un cairota...),
   con saluti e indizi locali.

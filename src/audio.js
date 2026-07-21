@@ -7,9 +7,11 @@ export class AudioManager {
     this.ctx = null;
     this.master = null;
     this.ambientNodes = [];
+    this._weatherNodes = [];
     this.muted = false;
     this.enabled = false;
     this.currentDim = null;
+    this._weatherType = null;
   }
 
   // Va chiamato da un gesto utente (autoplay policy)
@@ -78,6 +80,61 @@ export class AudioManager {
       }
     }
     this._ambientPad = pad;
+  }
+
+  // ---------- Ambiente meteo (rumore filtrato) ----------
+  _noiseBuffer() {
+    if (this._noise) return this._noise;
+    const len = this.ctx.sampleRate * 2;
+    const buf = this.ctx.createBuffer(1, len, this.ctx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = Math.random() * 2 - 1;
+    this._noise = buf;
+    return buf;
+  }
+
+  setWeatherAmbience(type) {
+    if (!this.enabled || type === this._weatherType) return;
+    this._weatherType = type;
+    this._stopWeather();
+
+    const cfg = {
+      rain: { filter: "highpass", freq: 800, gain: 0.10 },
+      snow: { filter: "lowpass", freq: 500, gain: 0.04 },
+      fog:  { filter: "lowpass", freq: 350, gain: 0.05 },
+      sand: { filter: "bandpass", freq: 700, gain: 0.13 },
+    }[type];
+    if (!cfg) return;
+
+    const src = this.ctx.createBufferSource();
+    src.buffer = this._noiseBuffer();
+    src.loop = true;
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = cfg.filter; filter.frequency.value = cfg.freq;
+    const g = this.ctx.createGain();
+    g.gain.value = 0;
+    g.gain.setTargetAtTime(cfg.gain, this.ctx.currentTime, 1.0);
+    src.connect(filter); filter.connect(g); g.connect(this.master);
+    src.start();
+
+    // vento: leggera modulazione del volume per sabbia/nebbia/neve
+    if (type !== "rain") {
+      const lfo = this.ctx.createOscillator();
+      const lg = this.ctx.createGain();
+      lfo.frequency.value = 0.15; lg.gain.value = cfg.gain * 0.6;
+      lfo.connect(lg); lg.connect(g.gain); lfo.start();
+      this._weatherNodes.push(lfo, lg);
+    }
+    this._weatherNodes.push(src, filter, g);
+    this._weatherGain = g;
+  }
+
+  _stopWeather() {
+    if (!this.ctx) return;
+    if (this._weatherGain) this._weatherGain.gain.setTargetAtTime(0, this.ctx.currentTime, 0.3);
+    const nodes = this._weatherNodes || [];
+    this._weatherNodes = [];
+    setTimeout(() => { for (const n of nodes) { try { n.stop && n.stop(); n.disconnect(); } catch (e) {} } }, 500);
   }
 
   _stopAmbient() {

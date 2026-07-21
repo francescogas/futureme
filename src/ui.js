@@ -51,6 +51,30 @@ export function setQuest(text) {
   el.classList.remove("hidden");
 }
 
+// Vignettatura d'atmosfera per dimensione + meteo
+export function setMood(dim, weather) {
+  const el = $("vignette");
+  if (!el) return;
+  let shadow, tint = "transparent";
+  if (dim === "moon") { shadow = "inset 0 0 260px 40px rgba(2,4,20,0.85)"; tint = "radial-gradient(130% 130% at 50% 30%, transparent 45%, rgba(20,10,50,0.4))"; }
+  else if (dim === "sun") { shadow = "inset 0 0 180px 10px rgba(255,180,80,0.18)"; tint = "transparent"; }
+  else { shadow = "inset 0 0 200px 20px rgba(0,0,0,0.35)"; }
+  if (weather === "sand") tint = "radial-gradient(130% 130% at 50% 40%, transparent 30%, rgba(190,150,80,0.4))";
+  else if (weather === "fog") tint = "radial-gradient(130% 130% at 50% 40%, transparent 20%, rgba(200,210,225,0.28))";
+  else if (weather === "rain" || weather === "snow") shadow = "inset 0 0 240px 30px rgba(10,20,40,0.5)";
+  el.style.boxShadow = shadow;
+  el.style.background = tint;
+}
+
+let dmgTimer = null;
+export function flashDamage() {
+  const el = $("damage-flash");
+  if (!el) return;
+  el.classList.remove("flash"); void el.offsetWidth; el.classList.add("flash");
+  clearTimeout(dmgTimer);
+  dmgTimer = setTimeout(() => el.classList.remove("flash"), 460);
+}
+
 export function setWeather(emoji, name) {
   const el = $("hud-weather");
   if (!el) return;

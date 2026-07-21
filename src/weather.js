@@ -26,6 +26,17 @@ const LABELS = {
   sand:   { emoji: "🌪️", name: "Tempesta di sabbia" },
 };
 
+// Effetti sul gameplay: moveMul = velocità del giocatore, monsterRangeMul = raggio
+// con cui i mostri ti individuano; hint = frase mostrata all'arrivo.
+const MODS = {
+  clear:  { moveMul: 1.0,  monsterRangeMul: 1.0,  hint: "" },
+  cloudy: { moveMul: 1.0,  monsterRangeMul: 1.0,  hint: "" },
+  rain:   { moveMul: 0.95, monsterRangeMul: 0.85, hint: "La pioggia attutisce i tuoi passi." },
+  snow:   { moveMul: 0.78, monsterRangeMul: 1.0,  hint: "La neve rallenta i tuoi movimenti." },
+  fog:    { moveMul: 1.0,  monsterRangeMul: 0.55, hint: "Nella nebbia i mostri ti vedono a fatica." },
+  sand:   { moveMul: 0.75, monsterRangeMul: 0.7,  hint: "La sabbia rallenta e riduce la visibilità." },
+};
+
 function weightedPick(table) {
   const total = table.reduce((s, [, w]) => s + w, 0);
   let r = Math.random() * total;
@@ -45,6 +56,7 @@ export class Weather {
   }
 
   get label() { return LABELS[this.type]; }
+  get mods() { return MODS[this.type] || MODS.clear; }
 
   _build(worldRoot, theme) {
     // nebbia: intensifica la nebbia della scena
