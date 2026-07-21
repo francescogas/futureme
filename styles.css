@@ -237,8 +237,22 @@ h2 { margin-bottom: 14px; font-size: 26px; }
 .mp-hint { margin-top: 16px; font-size: 12px; }
 .mp-hint code { background: rgba(0,0,0,0.4); padding: 2px 6px; border-radius: 6px; color: var(--neon); }
 
+.hud-sphere {
+  position: absolute; top: 108px; left: 14px; display: flex; align-items: center; gap: 8px;
+  background: var(--panel); border: 1px solid var(--neon); border-radius: 14px; padding: 6px 12px;
+  box-shadow: 0 0 16px rgba(77,243,255,0.3);
+}
+.hud-sphere .hs-icon { font-size: 22px; }
+.hud-sphere .hs-body { width: 96px; }
+.hs-bar { height: 6px; border-radius: 4px; background: rgba(120,160,255,0.15); overflow: hidden; }
+.hs-fill { height: 100%; width: 100%; background: linear-gradient(90deg, var(--neon), #2aa0ff); transition: width .2s; }
+.hs-label { font-size: 10px; letter-spacing: 1px; color: var(--neon); margin-top: 3px; }
+.hud-sphere.off { border-color: #556; box-shadow: none; opacity: 0.7; }
+.hud-sphere.off .hs-label { color: #8ea2d6; }
+.hud-sphere.empty .hs-fill { background: #664; }
+
 .mp-online {
-  position: absolute; top: 108px; left: 14px; pointer-events: none;
+  position: absolute; top: 156px; left: 14px; pointer-events: none;
   background: var(--panel); border: 1px solid var(--earth); border-radius: 20px;
   padding: 5px 12px; font-size: 13px; color: #d6e2ff;
 }

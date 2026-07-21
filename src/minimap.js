@@ -58,6 +58,9 @@ export class Minimap {
         : "#7fe08a";
       dot(it.position.x, it.position.z, col, 2.4);
     }
+    // Sfera del Veggente e cariche (nel mondo)
+    if (game.objects.spheres) for (const s of game.objects.spheres) dot(s.position.x, s.position.z, "#4df3ff", 4, true);
+    if (game.objects.charges) for (const c of game.objects.charges) dot(c.position.x, c.position.z, "#2aa0ff", 2.4);
     // portali
     for (const p of game.objects.portals) {
       const col = p.userData.dest === "invasion" ? (p.userData.closed ? "#556" : "#ff3355") : "#4df3ff";
@@ -65,8 +68,16 @@ export class Minimap {
     }
     // NPC
     for (const n of game.objects.npcs) dot(n.position.x, n.position.z, "#b96bff", 3);
-    // mostri
-    for (const m of game.objects.monsters) dot(m.position.x, m.position.z, "#ff2020", 3, true);
+    // altri giocatori (multiplayer)
+    if (game.remotes && game.remotes.size) {
+      for (const [, r] of game.remotes) dot(r.group.position.x, r.group.position.z, "#4dd39a", 4, true);
+    }
+    // mostri: normalmente solo quelli vicini; con la Sfera del Veggente attiva, tutti
+    const sphereOn = game.sphere && game.sphere.active && game.sphere.energy > 0;
+    for (const m of game.objects.monsters) {
+      const near = Math.hypot(m.position.x - px, m.position.z - pz) < 16;
+      if (sphereOn || near) dot(m.position.x, m.position.z, "#ff2020", sphereOn ? 3.4 : 3, sphereOn);
+    }
     // alter ego
     if (game.alter) dot(game.alter.position.x, game.alter.position.z, game.alter.userData.evil ? "#ff2040" : "#4df3ff", 4, true);
     // boss

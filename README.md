@@ -66,7 +66,8 @@ dello schermo per ruotare la telecamera.
 - **Stanze per dimensione**: incontri chi è nella tua stessa dimensione; passando
   da un mondo all'altro cambi "stanza".
 - **Chat in tempo reale** tra i giocatori della stessa dimensione.
-- **Contatore giocatori online** nell'HUD.
+- **Contatore giocatori online** nell'HUD e **altri giocatori tracciati sul radar**
+  (minimappa) come punti verdi.
 - Server Node/WebSocket incluso (`server.js`); il single-player resta disponibile
   anche offline.
 
@@ -90,6 +91,12 @@ dello schermo per ruotare la telecamera.
   teletrasporta e **evoca sciami di pipistrelli**. Fasi di battaglia epiche.
 - **Nemici volanti**: sciami di **pipistrelli** sorvolano la Luna, ondeggiano in
   quota e picchiano in picchiata sul giocatore.
+- **Sfera del Veggente** 🔮: un raro oggetto che, **tenuto attivo** (tasto **Q**),
+  rivela tutti i mostri sul radar e con un faro luminoso sopra ognuno. Ma si
+  **consuma** mentre è accesa (barra energia) e va **ricaricata** con le cariche
+  🔋; se un mostro ti colpisce può **rubartela** — cade a terra e devi riprenderla
+  in fretta prima che sparisca. Normalmente il radar mostra solo i mostri vicini:
+  la Sfera è l'unico modo per vederli tutti.
 - **Menu Impostazioni**: volume, sensibilità della telecamera ed "effetti ridotti"
   (per dispositivi meno potenti), salvati tra le sessioni.
 - **Ricompensa giornaliera** con **serie di accessi** (streak) che cresce ogni

@@ -5,7 +5,8 @@ import * as THREE from "three";
 import { buildAvatar, animateAvatar } from "./character.js";
 import {
   buildDimension, makeItem, makePortal, makeNPC, makeMonster,
-  makeAlterEgo, makeBoss, makeBat, makePowerup, animateWorldObjects,
+  makeAlterEgo, makeBoss, makeBat, makePowerup,
+  makeSphere, makeSphereCharge, makeBeacon, animateWorldObjects,
 } from "./world.js";
 import { DIMENSIONS, POTION_RECIPE, NPC_LINES, CITY_NPCS, ITEMS, REWARDS, POWERUPS } from "./data.js";
 import { Minimap } from "./minimap.js";
@@ -41,6 +42,7 @@ export class Game {
     this.combo = 0;
     this.comboTimer = 0;
     this.trailTimer = 0;
+    this.sphere = { has: false, energy: 0, active: false }; // Sfera del Veggente
 
     this._initRenderer();
     this._initInput();
@@ -72,6 +74,7 @@ export class Game {
       if (tag === "INPUT" || tag === "TEXTAREA") return;
       this.keys.add(e.code);
       if ((e.code === "KeyE" || e.code === "Space") && this.running) { e.preventDefault(); this._tryInteract(); }
+      if (e.code === "KeyQ" && this.running) { e.preventDefault(); this.toggleSphere(); }
     });
     window.addEventListener("keyup", (e) => this.keys.delete(e.code));
 
@@ -115,7 +118,9 @@ export class Game {
     this.combo = 0;
     this.powerups = {}; // type -> secondi rimanenti
     this.runScore = 0;
+    this.sphere = { has: false, energy: 0, active: false };
     UI.setPowerups(this.powerups);
+    UI.setSphere(this.sphere);
     UI.setCoins(Profile.coins);
     UI.setLevel(Profile.level, Profile.levelProgress().frac);
 
@@ -315,9 +320,14 @@ export class Game {
     this.scene.add(glow);
   }
 
+  _addSphere(o) { this.objects.spheres.push(o); this.worldRoot.add(o); }
+  _addCharge(o) { this.objects.charges.push(o); this.worldRoot.add(o); }
+
   // ---------- Popola con oggetti/nemici ----------
   _populate(dimId, level) {
     this.objects.powerups = [];
+    this.objects.spheres = [];
+    this.objects.charges = [];
     const spawnAt = (fn) => {
       const a = rand(0, Math.PI * 2), r = rand(6, this.worldSize - 10);
       return fn(Math.cos(a) * r, Math.sin(a) * r);
@@ -340,6 +350,7 @@ export class Game {
       this._addPortal(makePortal(0, 16, DIMENSIONS.sun.color, true), { dest: "sun", need: "passport", label: "Portale ignoto" });
       for (let i = 0; i < 2; i++) { const n = spawnAt((x, z) => makeNPC(x, z, 0x6a5acd)); this._addNPC(n); }
       spawnPowerups(2);
+      if (!this.sphere.has) this._addSphere(spawnAt((x, z) => makeSphere(x, z)));
     }
 
     else if (dimId === "moon") {
@@ -372,6 +383,8 @@ export class Game {
       }
       for (let i = 0; i < 1; i++) { const n = spawnAt((x, z) => makeNPC(x, z, 0x9060ff)); this._addNPC(n); }
       spawnPowerups(3);
+      if (!this.sphere.has) this._addSphere(spawnAt((x, z) => makeSphere(x, z)));
+      for (let i = 0; i < 2; i++) this._addCharge(spawnAt((x, z) => makeSphereCharge(x, z)));
       // il tuo io prigioniero (evil)
       this._spawnAlterEgo(true);
       // boss guardiano vicino al tuo io
@@ -387,6 +400,7 @@ export class Game {
       this._addPortal(makePortal(14, 6, DIMENSIONS.earth.color, false), { dest: "earth", need: null, label: "Portale verso la Terra" });
       for (let i = 0; i < 2; i++) { const n = spawnAt((x, z) => makeNPC(x, z, 0xffb347)); this._addNPC(n); }
       spawnPowerups(2);
+      for (let i = 0; i < 1; i++) this._addCharge(spawnAt((x, z) => makeSphereCharge(x, z)));
       // il tuo io buono (già salvato? no: qui è amichevole)
       this._spawnAlterEgo(false);
     }
@@ -837,8 +851,8 @@ export class Game {
 
   // ---------- Danno / morte ----------
   _damage(n) {
-    if (this.hitCooldown > 0) return;
-    if (this.powerups.shield > 0) { this.hitCooldown = 0.5; UI.hint("🛡️ Bloccato!"); return; }
+    if (this.hitCooldown > 0) return false;
+    if (this.powerups.shield > 0) { this.hitCooldown = 0.5; UI.hint("🛡️ Bloccato!"); return false; }
     this.hitCooldown = 1.0;
     this.state.hp -= n;
     this.shake = Math.min(0.9, 0.35 * n);
@@ -847,6 +861,7 @@ export class Game {
     UI.hint("💥 Colpito!");
     this.cb.onStateChange(this.state);
     if (this.state.hp <= 0) this._die();
+    return true;
   }
 
   _die() {
@@ -891,6 +906,7 @@ export class Game {
     if (this.bursts.length) this._updateBursts(dt);
     if (this.shockwaves.length) this._updateShockwaves(dt);
     if (this.remotes.size) this._updateRemotes(dt, t);
+    this._updateSphere(dt);
     if (this.alterBeam) this.alterBeam.material.opacity = 0.2 + Math.sin(t * 3) * 0.12;
     this.minimap.render(this);
 
@@ -1012,10 +1028,10 @@ export class Game {
         const dive = d < 4 ? -1.4 : 0;
         m.position.y = frozen ? m.userData.hover : m.userData.hover + Math.sin(et * 3 + m.position.x) * 0.4 + dive;
         if (m.userData.wings) for (const w of m.userData.wings) w.pivot.rotation.z = w.sx * Math.sin(et * 14) * 0.7;
-        if (!frozen && d < 1.6 && m.position.y < 2.2) this._damage(1);
+        if (!frozen && d < 1.6 && m.position.y < 2.2) { if (this._damage(1)) this._tryStealSphere(m); }
       } else {
         m.position.y = frozen ? 0 : Math.abs(Math.sin(et * 6 + m.position.x)) * 0.15;
-        if (!frozen && d < 1.3) this._damage(1);
+        if (!frozen && d < 1.3) { if (this._damage(1)) this._tryStealSphere(m); }
       }
     }
     // Boss: insegue e colpisce più forte
@@ -1067,7 +1083,7 @@ export class Game {
       // mostra la barra HP quando sei vicino
       if (d < 12) UI.setBossHP(this.boss.userData.hp, this.boss.userData.maxHp);
       else UI.setBossHP(null);
-      if (!frozen && d < 2.0) this._damage(2);
+      if (!frozen && d < 2.0) { if (this._damage(2)) this._tryStealSphere(this.boss); }
       // musica di tensione crescente
       if (this.audio) this.audio.setBossProximity(Math.max(0, Math.min(1, 1 - d / 26)));
     } else if (this.audio) {
@@ -1162,8 +1178,110 @@ export class Game {
     this.shake = 0.2;
   }
 
+  // ---------- Sfera del Veggente ----------
+  _collectSphere(energy = 100) {
+    this.sphere.has = true;
+    this.sphere.energy = Math.max(this.sphere.energy, energy);
+    this.sphere.active = true;
+    UI.setSphere(this.sphere);
+    if (this.audio) this.audio.potion();
+    UI.toast("🔮 Sfera del Veggente! Rivela i mostri (premi Q per attivarla/spegnerla)", 3200);
+  }
+
+  toggleSphere() {
+    if (!this.sphere.has) { UI.hint("Non hai la Sfera del Veggente"); return; }
+    if (!this.sphere.active && this.sphere.energy <= 0) { UI.hint("🔮 Sfera scarica — raccogli 🔋 cariche"); return; }
+    this.sphere.active = !this.sphere.active;
+    UI.hint(this.sphere.active ? "🔮 Sfera attiva" : "🔮 Sfera spenta");
+    UI.setSphere(this.sphere);
+    if (!this.sphere.active) this._clearBeacons();
+  }
+
+  _updateSphere(dt) {
+    // sfere rubate: scompaiono se non riprese
+    if (this.objects && this.objects.spheres) {
+      for (let i = this.objects.spheres.length - 1; i >= 0; i--) {
+        const s = this.objects.spheres[i];
+        if (s.userData.ttl != null) {
+          s.userData.ttl -= dt;
+          const fade = Math.max(0.2, Math.min(1, s.userData.ttl / 3));
+          if (s.userData.orb) s.userData.orb.material.opacity = 0.85 * fade;
+          if (s.userData.ttl <= 0) { this.worldRoot.remove(s); this.objects.spheres.splice(i, 1); }
+        }
+      }
+    }
+    if (!this.sphere.has) return;
+    if (this.sphere.active && this.sphere.energy > 0) {
+      this.sphere.energy = Math.max(0, this.sphere.energy - 6 * dt); // si consuma tenendola attiva
+      if (this.sphere.energy <= 0) {
+        this.sphere.active = false;
+        this._clearBeacons();
+        UI.toast("🔮 La Sfera si è scaricata! Raccogli 🔋 cariche per riattivarla", 2600);
+      }
+      UI.setSphere(this.sphere);
+    }
+    // fari sui mostri mentre è attiva
+    if (this.sphere.active && this.sphere.energy > 0) this._updateBeacons();
+  }
+
+  _updateBeacons() {
+    for (const m of this.objects.monsters) {
+      if (!m.userData.beacon) { const b = makeBeacon(); m.userData.beacon = b; m.add(b); }
+    }
+    if (this.boss && !this.boss.userData.beacon) { const b = makeBeacon(); this.boss.userData.beacon = b; this.boss.add(b); }
+  }
+  _clearBeacons() {
+    for (const m of this.objects.monsters) { if (m.userData.beacon) { m.remove(m.userData.beacon); m.userData.beacon = null; } }
+    if (this.boss && this.boss.userData.beacon) { this.boss.remove(this.boss.userData.beacon); this.boss.userData.beacon = null; }
+  }
+
+  // Un mostro può rubarti la Sfera quando ti colpisce
+  _tryStealSphere(monster) {
+    if (!this.sphere.has) return;
+    if (Math.random() > 0.4) return; // 40% di probabilità
+    const dropEnergy = Math.max(10, this.sphere.energy * 0.6);
+    this.sphere.has = false; this.sphere.active = false; this.sphere.energy = 0;
+    this._clearBeacons();
+    UI.setSphere(this.sphere);
+    // la Sfera cade poco oltre il mostro: inseguila per riprenderla!
+    const ang = Math.atan2(monster.position.z - this.player.position.z, monster.position.x - this.player.position.x);
+    const dropX = monster.position.x + Math.cos(ang) * 3;
+    const dropZ = monster.position.z + Math.sin(ang) * 3;
+    const dropped = makeSphere(dropX, dropZ, dropEnergy);
+    dropped.userData.ttl = 12; // sparisce se non la riprendi in tempo
+    this._addSphere(dropped);
+    if (this.audio) this.audio.hit();
+    UI.toast("😱 Ti hanno rubato la Sfera! Riprendila prima che sparisca!", 2800);
+  }
+
   _updatePickups() {
     const px = this.player.position.x, pz = this.player.position.z;
+    // Sfera del Veggente
+    for (let i = this.objects.spheres.length - 1; i >= 0; i--) {
+      const s = this.objects.spheres[i];
+      if (dist2(px, pz, s.position.x, s.position.z) < 1.8) {
+        this._spawnBurst(s.position.x, s.position.y, s.position.z, 0x4df3ff, 22);
+        this.worldRoot.remove(s);
+        this.objects.spheres.splice(i, 1);
+        this._collectSphere(s.userData.energy);
+      }
+    }
+    // cariche per la Sfera
+    for (let i = this.objects.charges.length - 1; i >= 0; i--) {
+      const c = this.objects.charges[i];
+      if (dist2(px, pz, c.position.x, c.position.z) < 1.6) {
+        this.worldRoot.remove(c);
+        this.objects.charges.splice(i, 1);
+        if (this.sphere.has) {
+          this.sphere.energy = Math.min(100, this.sphere.energy + 40);
+          UI.setSphere(this.sphere);
+          if (this.audio) this.audio.pickup();
+          UI.toast("🔋 Sfera ricaricata! (+40)", 1500);
+        } else {
+          UI.toast("🔋 Carica raccolta — ti serve la Sfera del Veggente!", 1800);
+        }
+      }
+    }
     // power-up
     for (let i = this.objects.powerups.length - 1; i >= 0; i--) {
       const pu = this.objects.powerups[i];

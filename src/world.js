@@ -56,6 +56,52 @@ export function makePowerup(type, x, z) {
   return g;
 }
 
+// ---------- Sfera del Veggente (rivela i mostri) ----------
+export function makeSphere(x, z, energy = 100) {
+  const g = new THREE.Group();
+  const orb = new THREE.Mesh(
+    new THREE.SphereGeometry(0.4, 20, 20),
+    new THREE.MeshStandardMaterial({ color: 0x9be0ff, emissive: 0x2aa0ff, emissiveIntensity: 0.9, roughness: 0.15, metalness: 0.3, transparent: true, opacity: 0.85 })
+  );
+  g.add(orb);
+  const core = new THREE.Mesh(new THREE.SphereGeometry(0.16, 12, 12), new THREE.MeshBasicMaterial({ color: 0xffffff }));
+  g.add(core);
+  for (let i = 0; i < 2; i++) {
+    const ring = new THREE.Mesh(new THREE.TorusGeometry(0.55 + i * 0.12, 0.03, 8, 28), new THREE.MeshBasicMaterial({ color: 0x4df3ff }));
+    ring.rotation.x = i === 0 ? Math.PI / 2 : 0;
+    g.add(ring);
+  }
+  g.add(new THREE.PointLight(0x4df3ff, 1.0, 8));
+  g.position.set(x, 1.2, z);
+  g.userData = { kind: "sphere", energy, orb, rings: g.children.filter((c) => c.geometry && c.geometry.type === "TorusGeometry"), baseY: 1.2 };
+  return g;
+}
+
+export function makeSphereCharge(x, z) {
+  const g = new THREE.Group();
+  const c = new THREE.Mesh(
+    new THREE.OctahedronGeometry(0.24, 0),
+    new THREE.MeshStandardMaterial({ color: 0x4df3ff, emissive: 0x2aa0ff, emissiveIntensity: 0.9, roughness: 0.2 })
+  );
+  g.add(c);
+  g.position.set(x, 1.0, z);
+  g.userData = { kind: "charge", core: c, baseY: 1.0 };
+  return g;
+}
+
+// Piccolo faro luminoso da mettere sopra un mostro quando la Sfera è attiva
+export function makeBeacon() {
+  const g = new THREE.Group();
+  const cone = new THREE.Mesh(new THREE.ConeGeometry(0.22, 0.4, 4), new THREE.MeshBasicMaterial({ color: 0xff4d6d }));
+  cone.rotation.x = Math.PI; cone.position.y = 2.4; g.add(cone);
+  const beam = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.04, 0.04, 2, 6),
+    new THREE.MeshBasicMaterial({ color: 0xff4d6d, transparent: true, opacity: 0.4 })
+  );
+  beam.position.y = 3.4; g.add(beam);
+  return g;
+}
+
 // ---------- Portal ----------
 export function makePortal(x, z, color, locked) {
   const g = new THREE.Group();
@@ -699,6 +745,19 @@ export function animateWorldObjects(objects, t, dt) {
       pu.userData.core.rotation.x += pu.userData.spin * 0.5 * dt;
       pu.userData.cage.rotation.z = t * 2;
       pu.position.y = pu.userData.baseY + Math.sin(t * 3 + pu.position.x) * 0.2;
+    }
+  }
+  if (objects.spheres) {
+    for (const s of objects.spheres) {
+      s.rotation.y = t;
+      s.position.y = s.userData.baseY + Math.sin(t * 2 + s.position.x) * 0.15;
+      if (s.userData.rings) s.userData.rings.forEach((r, i) => { r.rotation.z = t * (i ? -1.2 : 1.2); });
+    }
+  }
+  if (objects.charges) {
+    for (const c of objects.charges) {
+      c.userData.core.rotation.y += dt * 2;
+      c.position.y = c.userData.baseY + Math.sin(t * 3 + c.position.z) * 0.15;
     }
   }
   for (const n of objects.npcs) {

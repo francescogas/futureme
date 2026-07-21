@@ -600,6 +600,7 @@ function init() {
     const muted = audio.toggleMute();
     $("btn-mute").textContent = muted ? "🔇" : "🔊";
   };
+  $("btn-sphere").onclick = () => { if (game) game.toggleSphere(); };
 
   $("btn-shop").onclick = () => { buildShop(); showScreen("screen-shop"); };
   $("btn-shop-back").onclick = () => { showScreen("screen-title"); refreshTitleBar(); };

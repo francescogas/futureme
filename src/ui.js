@@ -152,6 +152,18 @@ export function addChatMessage(who, text, system = false) {
   while (log.children.length > 6) log.removeChild(log.firstChild);
 }
 
+export function setSphere(sphere) {
+  const el = $("hud-sphere"), btn = $("btn-sphere");
+  if (!el) return;
+  if (!sphere || !sphere.has) { el.classList.add("hidden"); btn && btn.classList.add("hidden"); return; }
+  el.classList.remove("hidden"); btn && btn.classList.remove("hidden");
+  $("hs-fill").style.width = Math.max(0, sphere.energy) + "%";
+  const label = $("hs-label");
+  el.classList.toggle("off", !sphere.active);
+  el.classList.toggle("empty", sphere.energy <= 0);
+  label.textContent = sphere.energy <= 0 ? "SCARICA" : (sphere.active ? "ATTIVA · Q" : "SPENTA · Q");
+}
+
 export function setWeather(emoji, name) {
   const el = $("hud-weather");
   if (!el) return;
