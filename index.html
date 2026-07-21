@@ -48,6 +48,14 @@
 
     <div class="hud-inventory" id="hud-inventory"></div>
 
+    <div id="tutorial-callout" class="tutorial-callout hidden">
+      <div class="tc-text" id="tc-text"></div>
+      <div class="tc-actions">
+        <button id="tc-next" class="tc-btn">Avanti →</button>
+        <button id="tc-skip" class="tc-skip">Salta il tutorial</button>
+      </div>
+    </div>
+
     <div class="hud-objective" id="hud-objective">Obiettivo: esplora e raccogli chiavi e passaporti.</div>
     <div class="hud-quest hidden" id="hud-quest"></div>
 
@@ -59,6 +67,8 @@
 
     <button id="btn-pause" class="corner-btn" title="Pausa">⏸</button>
     <button id="btn-mute" class="corner-btn" title="Audio on/off" style="right:66px;">🔊</button>
+    <button id="btn-emote" class="corner-btn" title="Emote (T)" style="right:118px;">🙂</button>
+    <div id="emote-bar" class="emote-bar hidden"></div>
 
     <!-- Controlli touch (mobile) -->
     <div id="touch-controls" class="hidden">

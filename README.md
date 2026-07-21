@@ -66,6 +66,9 @@ dello schermo per ruotare la telecamera.
 - **Stanze per dimensione**: incontri chi è nella tua stessa dimensione; passando
   da un mondo all'altro cambi "stanza".
 - **Chat in tempo reale** tra i giocatori della stessa dimensione.
+- **Emote** 🙂 (👋 😀 ❤️ 😮 😢 🎉 👍 🔥): appaiono come bolle fluttuanti sopra il tuo
+  avatar e quello degli altri giocatori, in tempo reale (tasto **T**, poi 1-8, o
+  il pulsante 🙂).
 - **Contatore giocatori online** nell'HUD e **altri giocatori tracciati sul radar**
   (minimappa) come punti verdi.
 - Server Node/WebSocket incluso (`server.js`); il single-player resta disponibile
@@ -128,6 +131,9 @@ dello schermo per ruotare la telecamera.
 - **Intro cinematografica**: alla prima partita una sequenza narrativa (con
   sfondo stellato animato) racconta la storia dei tre mondi; è rivedibile dal
   titolo con **La storia** e saltabile in qualsiasi momento.
+- **Tutorial guidato**: alla prima partita alcuni riquadri contestuali spiegano i
+  comandi e gli obiettivi, avanzando automaticamente quando raccogli un oggetto o
+  attraversi un portale; saltabile.
 - **Ciclo giorno/notte animato**: il sole (o la luna) attraversa lentamente il
   cielo, la luce e il gradiente del cielo cambiano con l'ora (compresa la
   "golden hour" al tramonto), mantenendo però l'identità di ogni città.

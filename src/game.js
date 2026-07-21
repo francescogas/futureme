@@ -39,6 +39,7 @@ export class Game {
     this.lowEffects = false;
     this.net = null;              // modulo di rete (multiplayer, opzionale)
     this.remotes = new Map();     // id -> { group, parts, tx, tz, tr, walk, label }
+    this.emotes = [];             // bolle emote attive
     this.combo = 0;
     this.comboTimer = 0;
     this.trailTimer = 0;
@@ -514,6 +515,42 @@ export class Game {
     this.clearRemotes();
     for (const p of peers) this.addRemote(p);
   }
+  // ---------- Emote (bolle fluttuanti) ----------
+  _emoteSprite(emoji) {
+    const c = document.createElement("canvas");
+    c.width = c.height = 128;
+    const ctx = c.getContext("2d");
+    ctx.font = "88px serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    ctx.fillText(emoji, 64, 72);
+    const spr = new THREE.Sprite(new THREE.SpriteMaterial({ map: new THREE.CanvasTexture(c), transparent: true, depthTest: false }));
+    spr.scale.set(1.4, 1.4, 1);
+    return spr;
+  }
+  _floatEmote(group, emoji) {
+    if (!group) return;
+    const spr = this._emoteSprite(emoji);
+    spr.position.set(0, 3.2, 0);
+    group.add(spr);
+    this.emotes.push({ spr, group, life: 0, max: 2.2 });
+  }
+  showEmote(emoji) {
+    this._floatEmote(this.player, emoji);
+    if (this.net && this.net.connected) this.net.sendEmote(emoji);
+  }
+  showRemoteEmote(id, emoji) {
+    const r = this.remotes.get(id);
+    if (r) this._floatEmote(r.group, emoji);
+  }
+  _updateEmotes(dt) {
+    for (let i = this.emotes.length - 1; i >= 0; i--) {
+      const e = this.emotes[i];
+      e.life += dt;
+      e.spr.position.y = 3.2 + e.life * 0.6;
+      e.spr.material.opacity = Math.max(0, 1 - e.life / e.max);
+      if (e.life >= e.max) { e.group.remove(e.spr); this.emotes.splice(i, 1); }
+    }
+  }
+
   _updateRemotes(dt, t) {
     for (const [, r] of this.remotes) {
       r.group.position.x += (r.tx - r.group.position.x) * Math.min(1, dt * 12);
@@ -906,6 +943,7 @@ export class Game {
     if (this.bursts.length) this._updateBursts(dt);
     if (this.shockwaves.length) this._updateShockwaves(dt);
     if (this.remotes.size) this._updateRemotes(dt, t);
+    if (this.emotes.length) this._updateEmotes(dt);
     this._updateSphere(dt);
     if (this.alterBeam) this.alterBeam.material.opacity = 0.2 + Math.sin(t * 3) * 0.12;
     this.minimap.render(this);

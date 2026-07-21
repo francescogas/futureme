@@ -464,9 +464,36 @@ h2 { margin-bottom: 14px; font-size: 26px; }
 }
 .hud-hint.show { opacity: 1; }
 
+/* ---------- Tutorial guidato ---------- */
+.tutorial-callout {
+  position: absolute; top: 150px; left: 50%; transform: translateX(-50%); z-index: 12;
+  width: min(460px, 90vw); pointer-events: auto;
+  background: linear-gradient(90deg, rgba(20,30,60,0.96), rgba(30,20,60,0.96));
+  border: 1px solid var(--neon); border-radius: 16px; padding: 16px 20px;
+  box-shadow: 0 8px 30px rgba(77,243,255,0.3); animation: toastIn .3s ease;
+}
+.tc-text { font-size: 15px; line-height: 1.5; color: #eaf2ff; margin-bottom: 12px; }
+.tc-text b { color: var(--neon); }
+.tc-actions { display: flex; align-items: center; gap: 12px; }
+.tc-btn { padding: 8px 18px; border-radius: 20px; border: none; cursor: pointer; font-weight: 800; background: linear-gradient(90deg, var(--neon), var(--neon2)); color: #041018; }
+.tc-skip { background: none; border: none; color: #9fb0d6; cursor: pointer; font-size: 13px; }
+.tc-skip:hover { color: #cfe0ff; }
+
+/* ---------- Emote ---------- */
+.emote-bar {
+  position: absolute; top: 62px; right: 118px; z-index: 12;
+  display: flex; gap: 6px; flex-wrap: wrap; max-width: 260px; justify-content: flex-end;
+  background: var(--panel); border: 1px solid var(--panel-border); border-radius: 14px; padding: 8px;
+}
+.emote-bar button {
+  width: 42px; height: 42px; font-size: 24px; border-radius: 10px; cursor: pointer;
+  background: rgba(120,160,255,0.1); border: 1px solid transparent;
+}
+.emote-bar button:hover { background: rgba(120,160,255,0.25); border-color: var(--neon); }
+
 /* ---------- Toast ---------- */
 #toast {
-  position: fixed; top: 90px; left: 50%; transform: translateX(-50%);
+  position: fixed; top: 90px; left: 50%; transform: translateX(-50%); pointer-events: none;
   z-index: 30; padding: 12px 26px; border-radius: 30px; font-size: 16px; font-weight: 700;
   background: var(--panel); border: 1px solid var(--neon); color: #fff;
   box-shadow: 0 6px 30px rgba(77,243,255,0.3); animation: toastIn .3s ease;

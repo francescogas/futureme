@@ -195,6 +195,9 @@ export const CITY_NPCS = {
   },
 };
 
+// Emote rapide (social / multiplayer)
+export const EMOTES = ["👋", "😀", "❤️", "😮", "😢", "🎉", "👍", "🔥"];
+
 // Power-up attivi a tempo (raccoglibili nel mondo)
 export const POWERUPS = {
   speed:  { emoji: "⚡", label: "Velocità",      color: 0x4df3ff, duration: 8,  desc: "Corri più veloce" },

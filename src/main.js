@@ -4,7 +4,7 @@
 import * as THREE from "three";
 import { Game } from "./game.js";
 import { buildAvatar, animateAvatar } from "./character.js";
-import { SPECIES, SEXES, OUTFITS, SKIN_COLORS, DIMENSIONS, TRAILS, OUTFIT_PRICES, ACHIEVEMENTS, FREE_OUTFITS } from "./data.js";
+import { SPECIES, SEXES, OUTFITS, SKIN_COLORS, DIMENSIONS, TRAILS, OUTFIT_PRICES, ACHIEVEMENTS, FREE_OUTFITS, EMOTES } from "./data.js";
 import { AudioManager } from "./audio.js";
 import { Save } from "./save.js";
 import { Profile, todayChallenge } from "./progression.js";
@@ -33,12 +33,56 @@ function ensureNet() {
     onPeerMove: (id, d) => { if (game) game.moveRemote(id, d); },
     onPeerLeave: (id) => { if (game) game.removeRemote(id); },
     onChat: (m) => { UI.addChatMessage(m.name, escapeHtml(m.text)); },
+    onEmote: (m) => { if (game) game.showRemoteEmote(m.id, m.emote); },
     onCount: (n) => { UI.setOnlineCount(n); },
   });
   if (game) game.net = net;
   return net;
 }
 function escapeHtml(s) { return (s || "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c])); }
+
+// ---------- Tutorial guidato (prima partita) ----------
+const TUTORIAL_KEY = "futureme_tutorial_seen";
+const TUTORIAL_STEPS = [
+  `👋 Benvenuto! Muoviti con <b>WASD</b> (o il joystick su mobile) e trascina il <b>mouse</b> per guardarti intorno.`,
+  `🔑 Raccogli <b>chiavi</b> e 🛂 <b>passaporti</b>: brillano sul <b>radar</b> in basso a destra. Servono per aprire i portali.`,
+  `🌀 Avvicinati a un <b>portale</b> luminoso e premi <b>E</b> per viaggiare in un altro mondo.`,
+  `🌙 Sulla <b>Luna</b> difenditi dai mostri e cerca la <b>🔮 Sfera del Veggente</b> (tasto <b>Q</b>) per rivelarli. In alto puoi usare le <b>🙂 emote</b>. Buona avventura!`,
+];
+let tutStep = -1;
+let tutPrevInv = 0, tutPrevDim = "earth";
+
+function tutorialSeen() { try { return localStorage.getItem(TUTORIAL_KEY) === "1"; } catch (e) { return false; } }
+function startTutorial() {
+  if (tutorialSeen()) return;
+  tutStep = 0; tutPrevInv = 0; tutPrevDim = "earth";
+  renderTutorial();
+}
+function renderTutorial() {
+  const el = $("tutorial-callout");
+  if (tutStep < 0 || tutStep >= TUTORIAL_STEPS.length) { el.classList.add("hidden"); return; }
+  $("tc-text").innerHTML = TUTORIAL_STEPS[tutStep];
+  $("tc-next").textContent = tutStep >= TUTORIAL_STEPS.length - 1 ? "Ho capito!" : "Avanti →";
+  el.classList.remove("hidden");
+}
+function tutorialNext() {
+  tutStep++;
+  if (tutStep >= TUTORIAL_STEPS.length) endTutorial();
+  else renderTutorial();
+}
+function endTutorial() {
+  tutStep = -1;
+  $("tutorial-callout").classList.add("hidden");
+  try { localStorage.setItem(TUTORIAL_KEY, "1"); } catch (e) {}
+}
+// auto-avanza in base alle azioni del giocatore
+function tutorialOnState(state) {
+  if (tutStep < 0) return;
+  const invCount = Object.values(state.inventory || {}).reduce((a, b) => a + b, 0);
+  if (tutStep === 1 && invCount > tutPrevInv) tutorialNext();
+  if (tutStep === 2 && state.dim !== tutPrevDim) tutorialNext();
+  tutPrevInv = invCount; tutPrevDim = state.dim;
+}
 
 // ---------- Impostazioni persistenti ----------
 const SETTINGS_KEY = "futureme_settings_v1";
@@ -282,7 +326,7 @@ function ensureGame() {
     game = new Game($("scene"), {
       onDeath: (state) => onDeath(state),
       onVictory: (state) => onVictory(state),
-      onStateChange: (state) => { UI.updateHUD(state); Save.write(charConfig, state); },
+      onStateChange: (state) => { UI.updateHUD(state); Save.write(charConfig, state); tutorialOnState(state); },
       audio,
     });
     touchUI = setupTouch(game);
@@ -310,6 +354,7 @@ function startGame(startDim) {
     UI.toast(`${selectedDaily.icon} Sfida del Giorno attiva: ${selectedDaily.name}!`, 3200);
   } else {
     UI.toast(`Benvenuto${charConfig.name ? ", " + charConfig.name : ""}! La tua avventura inizia.`, 3000);
+    startTutorial();
   }
 }
 
@@ -601,6 +646,30 @@ function init() {
     $("btn-mute").textContent = muted ? "🔇" : "🔊";
   };
   $("btn-sphere").onclick = () => { if (game) game.toggleSphere(); };
+
+  // ---- Emote ----
+  const emoteBar = $("emote-bar");
+  emoteBar.innerHTML = "";
+  for (const em of EMOTES) {
+    const b = document.createElement("button");
+    b.textContent = em;
+    b.onclick = () => { if (game) game.showEmote(em); emoteBar.classList.add("hidden"); };
+    emoteBar.appendChild(b);
+  }
+  $("btn-emote").onclick = () => emoteBar.classList.toggle("hidden");
+
+  // ---- Tutorial ----
+  $("tc-next").onclick = () => tutorialNext();
+  $("tc-skip").onclick = () => endTutorial();
+  window.addEventListener("keydown", (e) => {
+    const tag = e.target && e.target.tagName;
+    if (tag === "INPUT" || tag === "TEXTAREA") return;
+    if (e.code === "KeyT" && game && game.running) emoteBar.classList.toggle("hidden");
+    else if (/^Digit[1-8]$/.test(e.code) && game && game.running && !emoteBar.classList.contains("hidden")) {
+      const idx = +e.code.slice(5) - 1;
+      if (EMOTES[idx]) { game.showEmote(EMOTES[idx]); emoteBar.classList.add("hidden"); }
+    }
+  });
 
   $("btn-shop").onclick = () => { buildShop(); showScreen("screen-shop"); };
   $("btn-shop-back").onclick = () => { showScreen("screen-title"); refreshTitleBar(); };
