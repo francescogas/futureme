@@ -55,6 +55,9 @@ con chi è nel tuo stesso mondo (Terra/Luna/Sole).
 Volume, sensibilità della telecamera ed effetti grafici sono regolabili in
 **⚙️ Impostazioni** dal menu principale.
 
+Altri tasti utili: **Q** attiva/spegne la Sfera del Veggente · **M** apre la mappa
+a schermo intero · **T** apre le emote.
+
 Su **smartphone/tablet** compaiono automaticamente un **joystick** (in basso a
 sinistra) per muoverti e un pulsante **E** per interagire; trascina sul resto
 dello schermo per ruotare la telecamera.
@@ -102,11 +105,17 @@ resistite) finisce in **classifica** con l'etichetta 🌊.
   Maestro Combo, Notte dell'Orda, Sprint Dimensionale, Eclissi (nebbia ovunque) —
   un **obiettivo** da centrare e una **ricompensa** in monete. Banner dedicato
   sul titolo.
-- **Due boss diversi con attacchi speciali**: il **Guardiano della Luna** scatena
-  **onde d'urto** che si espandono e vanno schivate; il **Signore dei Vampiri** si
-  teletrasporta e **evoca sciami di pipistrelli**. Fasi di battaglia epiche.
-- **Nemici volanti**: sciami di **pipistrelli** sorvolano la Luna, ondeggiano in
-  quota e picchiano in picchiata sul giocatore.
+- **Due boss diversi con attacchi speciali e fase finale**: il **Guardiano della
+  Luna** scatena **onde d'urto** da schivare; il **Signore dei Vampiri** si
+  teletrasporta ed **evoca pipistrelli**. Sotto metà vita entrambi si
+  **infuriano** (fase 2): più veloci e con attacchi più frequenti.
+- **Tanti tipi di nemico** con comportamenti diversi: zombie/vampiri/lupi mannari,
+  **pipistrelli** volanti (picchiate), **caricatori** (stalkano lento e poi
+  scattano in carica) e **slime** (che si dividono in due mini-slime quando li
+  respingi).
+- **Mappa a schermo intero** (tasto **M**): vista strategica dell'intero mondo con
+  giocatori, oggetti, portali, Sfera, mostri e boss, con legenda.
+- **Classifica filtrabile** per modalità (Tutte / Avventura / Sopravvivenza).
 - **Sfera del Veggente** 🔮: un raro oggetto che, **tenuto attivo** (tasto **Q**),
   rivela tutti i mostri sul radar e con un faro luminoso sopra ognuno. Ma si
   **consuma** mentre è accesa (barra energia) e va **ricaricata** con le cariche

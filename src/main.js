@@ -375,6 +375,7 @@ function continueGame() {
 }
 
 function onDeath(state) {
+  if (game) game.closeMap();
   UI.updateHUD(state);
   UI.hide("hud");
   if (game && game.mode === "survival") {
@@ -400,6 +401,7 @@ function onDeath(state) {
 }
 
 function onVictory(state) {
+  if (game) game.closeMap();
   Save.clear();
   UI.hide("hud");
   const name = charConfig.name || "Eroe";
@@ -550,11 +552,14 @@ function refreshDaily() {
 }
 
 // ---------- Classifica ----------
+let lbFilter = "all";
 function buildLeaderboard() {
   const list = $("lb-list");
   list.innerHTML = "";
-  const entries = Profile.leaderboard();
-  if (!entries.length) { list.innerHTML = `<div class="lb-empty">Nessun risultato ancora. Gioca una partita per entrare in classifica!</div>`; return; }
+  let entries = Profile.leaderboard();
+  if (lbFilter === "survival") entries = entries.filter((e) => e.mode === "survival");
+  else if (lbFilter === "adventure") entries = entries.filter((e) => e.mode !== "survival");
+  if (!entries.length) { list.innerHTML = `<div class="lb-empty">Nessun risultato in questa categoria. Gioca una partita per entrare in classifica!</div>`; return; }
   entries.forEach((e, i) => {
     const row = document.createElement("div");
     row.className = "lb-row" + (i === 0 ? " top" : "");
@@ -693,6 +698,8 @@ function init() {
     $("btn-mute").textContent = muted ? "🔇" : "🔊";
   };
   $("btn-sphere").onclick = () => { if (game) game.toggleSphere(); };
+  $("btn-map").onclick = () => { if (game) game.toggleMap(); };
+  $("btn-map-close").onclick = () => { if (game) game.closeMap(); };
 
   // ---- Emote ----
   const emoteBar = $("emote-bar");
@@ -726,6 +733,12 @@ function init() {
   $("btn-ach-back").onclick = () => showScreen("screen-title");
   $("btn-leaderboard").onclick = () => { buildLeaderboard(); showScreen("screen-leaderboard"); };
   $("btn-lb-back").onclick = () => showScreen("screen-title");
+  $("lb-filters").querySelectorAll("[data-lbfilter]").forEach((b) => b.onclick = () => {
+    lbFilter = b.dataset.lbfilter;
+    $("lb-filters").querySelectorAll(".lb-tab").forEach((t) => t.classList.remove("active"));
+    b.classList.add("active");
+    buildLeaderboard();
+  });
   $("btn-settings").onclick = () => { setupSettingsControls(); showScreen("screen-settings"); };
   $("btn-settings-back").onclick = () => showScreen("screen-title");
 
@@ -784,13 +797,14 @@ function init() {
   };
   $("btn-restart").onclick = () => { showScreen("screen-creator"); };
 
-  $("btn-pause").onclick = () => { game.pause(); UI.hide("hud"); showScreen("screen-pause"); };
+  $("btn-pause").onclick = () => { game.closeMap(); game.pause(); UI.hide("hud"); showScreen("screen-pause"); };
   $("btn-resume").onclick = () => { showScreen(null); UI.show("hud"); audio.resume(); game.resume(); };
-  $("btn-quit").onclick = () => { game.pause(); UI.hide("hud"); refreshContinueButton(); refreshTitleBar(); refreshDaily(); showScreen("screen-title"); };
+  $("btn-quit").onclick = () => { game.closeMap(); game.pause(); UI.hide("hud"); refreshContinueButton(); refreshTitleBar(); refreshDaily(); showScreen("screen-title"); };
 
   // Esc = pausa
   window.addEventListener("keydown", (e) => {
     if (e.code === "Escape" && game && game.running) {
+      if (game.fullmapOpen) { game.closeMap(); return; }
       game.pause(); UI.hide("hud"); showScreen("screen-pause");
     }
   });

@@ -70,6 +70,17 @@
     <button id="btn-pause" class="corner-btn" title="Pausa">⏸</button>
     <button id="btn-mute" class="corner-btn" title="Audio on/off" style="right:66px;">🔊</button>
     <button id="btn-emote" class="corner-btn" title="Emote (T)" style="right:118px;">🙂</button>
+    <button id="btn-map" class="corner-btn" title="Mappa (M)" style="right:170px;">🗺️</button>
+
+    <div id="fullmap" class="fullmap hidden">
+      <div class="fullmap-inner">
+        <canvas id="fullmap-canvas" width="640" height="640"></canvas>
+        <div class="fullmap-legend">
+          🟢 Giocatori · 🟡 Chiavi · 🔵 Sfera · 🟣 Power-up/NPC · 🔴 Mostri/Boss · 🔷 Portali
+        </div>
+        <button id="btn-map-close" class="big-btn">Chiudi (M)</button>
+      </div>
+    </div>
     <div id="emote-bar" class="emote-bar hidden"></div>
 
     <!-- Controlli touch (mobile) -->
@@ -329,6 +340,11 @@
     <div class="panel">
       <h2>📊 Classifica</h2>
       <p class="muted">I tuoi migliori risultati. Batti il tuo record!</p>
+      <div class="lb-filters" id="lb-filters">
+        <button class="lb-tab active" data-lbfilter="all">Tutte</button>
+        <button class="lb-tab" data-lbfilter="adventure">🏆 Avventura</button>
+        <button class="lb-tab" data-lbfilter="survival">🌊 Sopravvivenza</button>
+      </div>
       <div class="lb-list" id="lb-list"></div>
       <button id="btn-lb-back" class="big-btn">Indietro</button>
     </div>

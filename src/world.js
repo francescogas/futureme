@@ -196,6 +196,43 @@ export function makeMonster(kind, x, z, elite = false) {
   return g;
 }
 
+// ---------- Caricatore: stalka lento, poi carica in scatto ----------
+export function makeCharger(x, z, elite = false) {
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.ConeGeometry(0.42, 1.2, 6), stdMat(0x8a1a2a, { rough: 0.6, emissive: 0x5a0a1a, ei: 0.3 }));
+  body.position.y = 0.9; g.add(body);
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.3, 12, 12), stdMat(0xc02a3a, { rough: 0.6 }));
+  head.position.y = 1.7; g.add(head);
+  for (const sx of [-1, 1]) {
+    const horn = new THREE.Mesh(new THREE.ConeGeometry(0.08, 0.4, 4), stdMat(0xffe0a0));
+    horn.position.set(sx * 0.16, 2.0, 0.1); horn.rotation.z = sx * 0.4; g.add(horn);
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.06, 6, 6), new THREE.MeshBasicMaterial({ color: 0xffcc00 }));
+    eye.position.set(sx * 0.11, 1.72, 0.26); g.add(eye);
+  }
+  if (elite) { g.scale.setScalar(1.35); g.add(new THREE.PointLight(0xff3020, 0.5, 6)); }
+  g.position.set(x, 0, z);
+  g.userData = { kind: "monster", type: "charger", behavior: "charge", speed: elite ? 1.8 : 1.4, chargeTimer: rand(1.5, 3), charging: 0, cvx: 0, cvz: 0, baseY: 0, hp: 1, elite };
+  g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+  return g;
+}
+
+// ---------- Slime: si divide in due quando lo respingi ----------
+export function makeSlime(x, z, mini = false) {
+  const g = new THREE.Group();
+  const s = mini ? 0.5 : 1;
+  const body = new THREE.Mesh(new THREE.SphereGeometry(0.4 * s, 14, 12), stdMat(0x3fbf6a, { rough: 0.4, metal: 0.1, emissive: 0x1a5a2a, ei: 0.3, }));
+  body.material.transparent = true; body.material.opacity = 0.85;
+  body.scale.y = 0.7; body.position.y = 0.3 * s; g.add(body);
+  for (const sx of [-1, 1]) {
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.06 * s, 8, 8), new THREE.MeshBasicMaterial({ color: 0x0a1a0a }));
+    eye.position.set(sx * 0.14 * s, 0.36 * s, 0.3 * s); g.add(eye);
+  }
+  g.position.set(x, 0, z);
+  g.userData = { kind: "monster", type: "slime", behavior: "slime", speed: mini ? 2.6 : 1.7, splits: mini ? 0 : 2, baseY: 0, hp: 1, blob: body, mini };
+  g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+  return g;
+}
+
 // ---------- Nemico volante: pipistrello ----------
 export function makeBat(x, z, elite = false) {
   const g = new THREE.Group();

@@ -102,3 +102,53 @@ export class Minimap {
     ctx.stroke();
   }
 }
+
+// Mappa a schermo intero (nord in alto, centrata sull'origine del mondo)
+export function renderFullMap(game, canvas) {
+  const ctx = canvas.getContext("2d");
+  const S = canvas.width, R = S / 2;
+  const worldR = game.worldSize;
+  const scale = (R - 20) / worldR;
+  const W = (wx, wz) => [R + wx * scale, R + wz * scale];
+  const dot = (wx, wz, color, size, glow) => {
+    const [x, y] = W(wx, wz);
+    if (glow) { ctx.shadowColor = color; ctx.shadowBlur = 10; }
+    ctx.fillStyle = color; ctx.beginPath(); ctx.arc(x, y, size, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowBlur = 0;
+  };
+
+  ctx.clearRect(0, 0, S, S);
+  ctx.save();
+  ctx.beginPath(); ctx.arc(R, R, R - 4, 0, Math.PI * 2); ctx.clip();
+  ctx.fillStyle = "rgba(6,8,20,0.96)"; ctx.fillRect(0, 0, S, S);
+  // griglia
+  ctx.strokeStyle = "rgba(120,160,255,0.08)"; ctx.lineWidth = 1;
+  for (let g = -worldR; g <= worldR; g += 10) { const [gx] = W(g, 0); const [, gy] = W(0, g); ctx.beginPath(); ctx.moveTo(gx, 0); ctx.lineTo(gx, S); ctx.moveTo(0, gy); ctx.lineTo(S, gy); ctx.stroke(); }
+
+  const o = game.objects;
+  for (const it of o.items) dot(it.position.x, it.position.z, (it.userData.type === "key" || it.userData.type === "passport") ? "#ffd35c" : "#9fb", 3);
+  if (o.spheres) for (const s of o.spheres) dot(s.position.x, s.position.z, "#4df3ff", 6, true);
+  if (o.charges) for (const c of o.charges) dot(c.position.x, c.position.z, "#2aa0ff", 4);
+  if (o.powerups) for (const p of o.powerups) dot(p.position.x, p.position.z, "#b96bff", 4, true);
+  for (const p of o.portals) dot(p.position.x, p.position.z, p.userData.dest === "invasion" ? (p.userData.closed ? "#556" : "#ff3355") : "#4df3ff", 6, true);
+  for (const n of o.npcs) dot(n.position.x, n.position.z, "#b96bff", 5);
+  if (game.remotes) for (const [, r] of game.remotes) dot(r.group.position.x, r.group.position.z, "#4dd39a", 7, true);
+  const sphereOn = game.sphere && game.sphere.active && game.sphere.energy > 0;
+  const px = game.player.position.x, pz = game.player.position.z;
+  for (const m of o.monsters) {
+    const near = Math.hypot(m.position.x - px, m.position.z - pz) < 16;
+    if (sphereOn || near) dot(m.position.x, m.position.z, "#ff2020", 5, sphereOn);
+  }
+  if (game.alter) dot(game.alter.position.x, game.alter.position.z, game.alter.userData.evil ? "#ff2040" : "#4df3ff", 8, true);
+  if (game.boss) dot(game.boss.position.x, game.boss.position.z, "#ff3366", 10, true);
+
+  // giocatore (freccia orientata)
+  const [pxs, pys] = W(px, pz);
+  ctx.save(); ctx.translate(pxs, pys); ctx.rotate(-game.player.rotation.y + Math.PI);
+  ctx.fillStyle = "#ffffff"; ctx.beginPath(); ctx.moveTo(0, -10); ctx.lineTo(-7, 8); ctx.lineTo(7, 8); ctx.closePath(); ctx.fill();
+  ctx.restore();
+  ctx.restore();
+
+  ctx.strokeStyle = "rgba(120,160,255,0.6)"; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.arc(R, R, R - 4, 0, Math.PI * 2); ctx.stroke();
+}

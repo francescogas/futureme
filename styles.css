@@ -297,6 +297,10 @@ h2 { margin-bottom: 14px; font-size: 26px; }
 .setting-row span { width: 48px; text-align: right; color: var(--gold); font-weight: 700; }
 
 /* ---------- Classifica ---------- */
+.lb-filters { display: flex; gap: 8px; margin: 12px 0; justify-content: center; flex-wrap: wrap; }
+.lb-tab { padding: 8px 16px; border-radius: 20px; cursor: pointer; font-size: 14px; font-weight: 700; color: #cfe0ff; background: rgba(120,160,255,0.1); border: 1px solid transparent; }
+.lb-tab:hover { background: rgba(120,160,255,0.2); }
+.lb-tab.active { border-color: var(--neon); background: rgba(77,243,255,0.16); color: #fff; }
 .lb-list { display: flex; flex-direction: column; gap: 6px; margin: 14px 0 20px; }
 .lb-row {
   display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-radius: 12px;
@@ -501,6 +505,16 @@ h2 { margin-bottom: 14px; font-size: 26px; }
 .tc-btn { padding: 8px 18px; border-radius: 20px; border: none; cursor: pointer; font-weight: 800; background: linear-gradient(90deg, var(--neon), var(--neon2)); color: #041018; }
 .tc-skip { background: none; border: none; color: #9fb0d6; cursor: pointer; font-size: 13px; }
 .tc-skip:hover { color: #cfe0ff; }
+
+/* ---------- Mappa a schermo intero ---------- */
+.fullmap {
+  position: absolute; inset: 0; z-index: 14; pointer-events: auto;
+  display: flex; align-items: center; justify-content: center;
+  background: rgba(3,4,12,0.82); backdrop-filter: blur(2px);
+}
+.fullmap-inner { text-align: center; }
+#fullmap-canvas { width: min(78vh, 90vw); height: min(78vh, 90vw); border-radius: 50%; box-shadow: 0 0 50px rgba(77,243,255,0.25); }
+.fullmap-legend { margin: 12px 0; font-size: 13px; color: #cbd7f5; }
 
 /* ---------- Emote ---------- */
 .emote-bar {

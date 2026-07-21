@@ -5,11 +5,11 @@ import * as THREE from "three";
 import { buildAvatar, animateAvatar } from "./character.js";
 import {
   buildDimension, makeItem, makePortal, makeNPC, makeMonster,
-  makeAlterEgo, makeBoss, makeBat, makePowerup,
+  makeAlterEgo, makeBoss, makeBat, makeCharger, makeSlime, makePowerup,
   makeSphere, makeSphereCharge, makeBeacon, animateWorldObjects,
 } from "./world.js";
 import { DIMENSIONS, POTION_RECIPE, NPC_LINES, CITY_NPCS, ITEMS, REWARDS, POWERUPS } from "./data.js";
-import { Minimap } from "./minimap.js";
+import { Minimap, renderFullMap } from "./minimap.js";
 import { Weather } from "./weather.js";
 import { Profile } from "./progression.js";
 import * as UI from "./ui.js";
@@ -78,6 +78,7 @@ export class Game {
       this.keys.add(e.code);
       if ((e.code === "KeyE" || e.code === "Space") && this.running) { e.preventDefault(); this._tryInteract(); }
       if (e.code === "KeyQ" && this.running) { e.preventDefault(); this.toggleSphere(); }
+      if (e.code === "KeyM" && this.running) { e.preventDefault(); this.toggleMap(); }
     });
     window.addEventListener("keyup", (e) => this.keys.delete(e.code));
 
@@ -397,6 +398,9 @@ export class Game {
         const b = spawnAt((x, z) => makeBat(x, z, i < nElite));
         this._addMonster(b);
       }
+      // nemici speciali: caricatore e slime
+      this._addMonster(spawnAt((x, z) => makeCharger(x, z, false)));
+      this._addMonster(spawnAt((x, z) => makeSlime(x, z)));
       for (let i = 0; i < 1; i++) { const n = spawnAt((x, z) => makeNPC(x, z, 0x9060ff)); this._addNPC(n); }
       spawnPowerups(3);
       if (!this.sphere.has) this._addSphere(spawnAt((x, z) => makeSphere(x, z)));
@@ -451,6 +455,10 @@ export class Game {
     const nBats = Math.floor(n / 2);
     for (let i = 0; i < nMon; i++) this._addMonster(this._spawnAt((x, z) => makeMonster(pick(types), x, z, i < nElite)));
     for (let i = 0; i < nBats; i++) this._addMonster(this._spawnAt((x, z) => makeBat(x, z, i < Math.floor(nElite / 2))));
+    // nemici speciali crescenti
+    const nCharger = Math.floor(n / 2), nSlime = Math.floor(n / 3);
+    for (let i = 0; i < nCharger; i++) this._addMonster(this._spawnAt((x, z) => makeCharger(x, z, i < nElite)));
+    for (let i = 0; i < nSlime; i++) this._addMonster(this._spawnAt((x, z) => makeSlime(x, z)));
     if (isBossWave) {
       const bx = this._spawnAt((x, z) => ({ x, z }));
       const boss = makeBoss(bx.x, bx.z, Math.random() < 0.5 ? "vampire" : "guardian");
@@ -535,6 +543,18 @@ export class Game {
   // ---------- API pubbliche per i controlli touch ----------
   setTouchMove(x, z) { this.touchMove.x = x; this.touchMove.z = z; }
   interact() { if (this.running) this._tryInteract(); }
+
+  // ---------- Mappa a schermo intero ----------
+  toggleMap() {
+    this.fullmapOpen = !this.fullmapOpen;
+    const el = document.getElementById("fullmap");
+    if (el) el.classList.toggle("hidden", !this.fullmapOpen);
+  }
+  closeMap() {
+    this.fullmapOpen = false;
+    const el = document.getElementById("fullmap");
+    if (el) el.classList.add("hidden");
+  }
 
   // ---------- Impostazioni ----------
   setSensitivity(v) { this.sensitivity = v; }
@@ -769,6 +789,13 @@ export class Game {
     if (i >= 0) this.objects.monsters.splice(i, 1);
     this._spawnBurst(m.position.x, 1.2, m.position.z, 0xffe9a0, 18);
     this.worldRoot.remove(m);
+    // lo slime si divide in due mini-slime
+    if (m.userData.splits > 0) {
+      for (let k = 0; k < 2; k++) {
+        const mini = makeSlime(m.position.x + rand(-1.2, 1.2), m.position.z + rand(-1.2, 1.2), true);
+        this._addMonster(mini);
+      }
+    }
     this.state.monstersBanished++;
     Profile.addBanish(1);
     this.runBanished++;
@@ -792,14 +819,27 @@ export class Game {
       return;
     }
     if (defense) this._takeItem(defense);
-    this.boss.userData.hp--;
+    const bu = this.boss.userData;
+    bu.hp--;
     if (this.audio) this.audio.banish();
     this.shake = 0.3;
     this._spawnBurst(this.boss.position.x, 2.2, this.boss.position.z, 0xff3366, 16);
     this._reward("bossHit");
     // reazione visiva
     this.boss.position.y = 0.3;
-    UI.setBossHP(Math.max(0, this.boss.userData.hp), this.boss.userData.maxHp);
+    UI.setBossHP(Math.max(0, bu.hp), bu.maxHp);
+    // FASE 2: il boss si infuria sotto metà vita
+    if (!bu.phase2 && bu.hp > 0 && bu.hp <= Math.ceil(bu.maxHp / 2)) {
+      bu.phase2 = true;
+      bu.speed *= 1.6;
+      bu.attackTimer = 1.2; bu.summonTimer = 1.5; bu.teleTimer = 1.2;
+      this.shake = 0.8;
+      this._spawnBurst(this.boss.position.x, 2.5, this.boss.position.z, 0xff2020, 40);
+      this.boss.traverse((o) => { if (o.isMesh && o.material && o.material.emissive) o.material.emissiveIntensity = Math.min(1.2, (o.material.emissiveIntensity || 0.3) + 0.5); });
+      UI.setBossName(bu.name + " · INFURIATO");
+      UI.hint("🔥 Il boss si è INFURIATO!");
+      UI.toast(`🔥 ${bu.name} si infuria — attacca più in fretta!`, 2600);
+    }
     this.cb.onStateChange(this.state);
     if (this.boss.userData.hp <= 0) {
       this._spawnBurst(this.boss.position.x, 2.5, this.boss.position.z, 0xffd35c, 40);
@@ -1036,6 +1076,7 @@ export class Game {
     this._updateProximityHints();
     animateWorldObjects(this.objects, t, dt);
     if (this.weather) this.weather.update(dt, t);
+    if (this.fullmapOpen) { const mc = document.getElementById("fullmap-canvas"); if (mc) renderFullMap(this, mc); }
     if (this.bursts.length) this._updateBursts(dt);
     if (this.shockwaves.length) this._updateShockwaves(dt);
     if (this.remotes.size) this._updateRemotes(dt, t);
@@ -1152,20 +1193,41 @@ export class Game {
     const frozen = this.powerups.freeze > 0;
     const et = this.clock.elapsedTime;
     for (const m of this.objects.monsters) {
+      const u = m.userData;
       const dx = px - m.position.x, dz = pz - m.position.z;
       const d = Math.hypot(dx, dz);
-      if (!frozen && d < sight && d > 0.01) {
-        m.position.x += (dx / d) * m.userData.speed * dt;
-        m.position.z += (dz / d) * m.userData.speed * dt;
-        m.rotation.y = Math.atan2(dx, dz);
+      const chase = () => { if (d > 0.01) { m.position.x += (dx / d) * u.speed * dt; m.position.z += (dz / d) * u.speed * dt; m.rotation.y = Math.atan2(dx, dz); } };
+
+      if (u.behavior === "charge") {
+        // Caricatore: stalka lento, poi scatta in carica
+        if (!frozen) {
+          if (u.charging > 0) { u.charging -= dt; m.position.x += u.cvx * dt; m.position.z += u.cvz * dt; }
+          else {
+            u.chargeTimer -= dt;
+            if (d < sight) chase();
+            if (u.chargeTimer <= 0 && d < 16 && d > 0.01) { u.charging = 0.6; u.chargeTimer = rand(2.6, 4.2); u.cvx = dx / d * 11; u.cvz = dz / d * 11; m.rotation.y = Math.atan2(dx, dz); this._spawnBurst(m.position.x, 0.6, m.position.z, 0xff5a3c, 6); }
+          }
+        }
+        m.position.y = frozen ? 0 : Math.abs(Math.sin(et * 6 + m.position.x)) * 0.12;
+        if (!frozen && d < 1.4) { if (this._damage(1)) this._tryStealSphere(m); }
       }
-      if (m.userData.flying) {
-        // volo: quota ondeggiante, picchiata quando è vicino
+      else if (u.behavior === "slime") {
+        // Slime: saltella verso di te (si divide quando lo respingi)
+        if (!frozen && d < sight) chase();
+        const hop = Math.abs(Math.sin(et * 4 + m.position.x)) * 0.45;
+        m.position.y = frozen ? 0 : hop;
+        if (u.blob) u.blob.scale.y = 0.7 - hop * 0.35;
+        if (!frozen && d < 1.3) { if (this._damage(1)) this._tryStealSphere(m); }
+      }
+      else if (u.flying) {
+        if (!frozen && d < sight) chase();
         const dive = d < 4 ? -1.4 : 0;
-        m.position.y = frozen ? m.userData.hover : m.userData.hover + Math.sin(et * 3 + m.position.x) * 0.4 + dive;
-        if (m.userData.wings) for (const w of m.userData.wings) w.pivot.rotation.z = w.sx * Math.sin(et * 14) * 0.7;
+        m.position.y = frozen ? u.hover : u.hover + Math.sin(et * 3 + m.position.x) * 0.4 + dive;
+        if (u.wings) for (const w of u.wings) w.pivot.rotation.z = w.sx * Math.sin(et * 14) * 0.7;
         if (!frozen && d < 1.6 && m.position.y < 2.2) { if (this._damage(1)) this._tryStealSphere(m); }
-      } else {
+      }
+      else {
+        if (!frozen && d < sight) chase();
         m.position.y = frozen ? 0 : Math.abs(Math.sin(et * 6 + m.position.x)) * 0.15;
         if (!frozen && d < 1.3) { if (this._damage(1)) this._tryStealSphere(m); }
       }
