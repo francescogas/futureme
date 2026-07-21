@@ -52,6 +52,8 @@ export class Game {
     this.attackTimer = 0; this.attackCd = 0;
     this.camMode = 0;             // 0 = terza persona, 1 = prima persona, 2 = lontana
     this.lookId = null;           // pointerId attivo per ruotare la telecamera (multi-touch)
+    this._touchActive = false;    // joystick premuto (per agganciare la direzione)
+    this._moveRefYaw = 0;         // yaw di riferimento del movimento touch
 
     this._initRenderer();
     this._initInput();
@@ -250,6 +252,7 @@ export class Game {
     this.player.position.set(0, 0, 8);
     this.yaw = 0;
     this.velY = 0; this.onGround = true;
+    this._touchActive = false;
     this.player.visible = this.camMode !== 1;
     this.scene.add(this.player);
 
@@ -1195,15 +1198,28 @@ export class Game {
       mx = this.touchMove.x; mz = this.touchMove.z; fromTouch = true;
     }
 
+    // Latch: "su" del joystick = avanti relativo alla telecamera nell'istante
+    // in cui inizi a spingere. Resta fisso per tutta la spinta (niente deriva),
+    // poi la telecamera insegue. Al rilascio si ri-aggancia alla nuova vista.
+    if (fromTouch) {
+      if (!this._touchActive) { this._touchActive = true; this._moveRefYaw = this.yaw; }
+    } else {
+      this._touchActive = false;
+    }
+
     let moving = 0;
     if (mx || mz) {
       const len = Math.hypot(mx, mz); mx /= len; mz /= len;
+      const fwd = -mz, rgt = mx;
       let dx, dz;
       if (fromTouch) {
-        // MOBILE: movimento in coordinate del mondo (su = lontano) e
-        // telecamera che INSEGUE la direzione di marcia, così il
-        // personaggio va sempre "dentro" lo schermo e vedi dove va.
-        dx = mx; dz = -mz;
+        // MOBILE: direzioni relative alla vista agganciata (_moveRefYaw).
+        const ry = this._moveRefYaw;
+        const sin = Math.sin(ry), cos = Math.cos(ry);
+        dx = rgt * cos + fwd * sin;
+        dz = -rgt * sin + fwd * cos;
+        // la telecamera insegue la direzione di marcia (così finisci sempre
+        // a vedere il personaggio di spalle, di qualunque parte tu vada)
         if (this.camMode !== 1 && this.lookId === null) {
           const targetYaw = Math.atan2(dx, dz);
           let diff = targetYaw - this.yaw;
@@ -1213,7 +1229,6 @@ export class Game {
         }
       } else {
         // DESKTOP: movimento relativo alla telecamera (WASD classico).
-        const fwd = -mz, rgt = mx;
         const sin = Math.sin(this.yaw), cos = Math.cos(this.yaw);
         dx = rgt * cos + fwd * sin;
         dz = -rgt * sin + fwd * cos;
