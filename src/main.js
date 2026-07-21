@@ -7,13 +7,14 @@ import { buildAvatar, animateAvatar } from "./character.js";
 import { SPECIES, SEXES, OUTFITS, SKIN_COLORS, DIMENSIONS, TRAILS, OUTFIT_PRICES, ACHIEVEMENTS, FREE_OUTFITS } from "./data.js";
 import { AudioManager } from "./audio.js";
 import { Save } from "./save.js";
-import { Profile } from "./progression.js";
+import { Profile, todayChallenge } from "./progression.js";
 import { setupTouch, isTouchDevice } from "./touch.js";
 import * as UI from "./ui.js";
 
 const $ = (id) => document.getElementById(id);
 const audio = new AudioManager();
 let touchUI = null;
+let selectedDaily = null; // sfida del giorno scelta per la prossima partita
 
 // Storia raccontata nell'intro cinematografica
 const STORY = [
@@ -259,13 +260,18 @@ function startGame(startDim) {
   UI.show("hud");
   ensureGame();
   UI.setQuest(null);
-  game.start(charConfig);
+  game.start(charConfig, null, selectedDaily);
   // se l'utente ha scelto una dimensione diversa dalla Terra, viaggia subito
   if (startDim && startDim !== "earth") {
     game.loadDimension(startDim, 1, `Inizi nella dimensione ${DIMENSIONS[startDim].name}`);
   }
   UI.updateHUD(game.state);
-  UI.toast(`Benvenuto${charConfig.name ? ", " + charConfig.name : ""}! La tua avventura inizia.`, 3000);
+  if (selectedDaily) {
+    UI.setQuest(`Sfida del Giorno: ${selectedDaily.goalDesc}`);
+    UI.toast(`${selectedDaily.icon} Sfida del Giorno attiva: ${selectedDaily.name}!`, 3200);
+  } else {
+    UI.toast(`Benvenuto${charConfig.name ? ", " + charConfig.name : ""}! La tua avventura inizia.`, 3000);
+  }
 }
 
 function continueGame() {
@@ -393,6 +399,22 @@ function buildAchievements() {
   }
 }
 
+// ---------- Sfida del Giorno (banner titolo) ----------
+function refreshDaily() {
+  const banner = $("daily-banner");
+  const ch = todayChallenge();
+  const done = !Profile.dailyChallengeAvailable();
+  $("db-icon").textContent = ch.icon;
+  $("db-name").textContent = ch.name;
+  $("db-desc").textContent = ch.desc;
+  $("db-goal").textContent = done ? "✓ Completata oggi!" : `Obiettivo: ${ch.goalDesc} — Ricompensa: ${ch.reward} 🪙`;
+  const btn = $("btn-daily");
+  btn.disabled = done;
+  btn.textContent = done ? "Completata ✓" : "Gioca";
+  banner.classList.toggle("done", done);
+  banner.classList.remove("hidden");
+}
+
 // ---------- Classifica ----------
 function buildLeaderboard() {
   const list = $("lb-list");
@@ -506,12 +528,20 @@ function init() {
 
   $("btn-start").onclick = () => {
     audio.init();
+    selectedDaily = null;
     // mostra l'intro solo la prima volta; poi si può rivedere con "La storia"
     let seen = false;
     try { seen = localStorage.getItem(INTRO_KEY) === "1"; } catch (e) {}
     if (seen) showScreen("screen-creator"); else showIntro();
   };
-  $("btn-continue").onclick = () => continueGame();
+  $("btn-daily").onclick = () => {
+    if (!Profile.dailyChallengeAvailable()) return;
+    audio.init();
+    selectedDaily = todayChallenge();
+    UI.toast(`${selectedDaily.icon} Sfida: ${selectedDaily.goalDesc}`, 3000);
+    showScreen("screen-creator");
+  };
+  $("btn-continue").onclick = () => { selectedDaily = null; continueGame(); };
   $("btn-story").onclick = () => { audio.init(); showIntro(); };
   $("btn-intro-next").onclick = () => nextStorySlide();
   $("btn-intro-skip").onclick = () => finishIntro();
@@ -532,6 +562,7 @@ function init() {
   // mostra "Continua" se esiste un salvataggio
   refreshContinueButton();
   refreshTitleBar();
+  refreshDaily();
   maybeDailyReward();
   $("btn-howto").onclick = () => showScreen("screen-howto");
   $("btn-howto-back").onclick = () => showScreen("screen-title");
@@ -544,7 +575,7 @@ function init() {
 
   $("btn-pause").onclick = () => { game.pause(); UI.hide("hud"); showScreen("screen-pause"); };
   $("btn-resume").onclick = () => { showScreen(null); UI.show("hud"); audio.resume(); game.resume(); };
-  $("btn-quit").onclick = () => { game.pause(); UI.hide("hud"); refreshContinueButton(); refreshTitleBar(); showScreen("screen-title"); };
+  $("btn-quit").onclick = () => { game.pause(); UI.hide("hud"); refreshContinueButton(); refreshTitleBar(); refreshDaily(); showScreen("screen-title"); };
 
   // Esc = pausa
   window.addEventListener("keydown", (e) => {

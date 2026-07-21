@@ -141,6 +141,11 @@ export function setWeather(emoji, name) {
   el.title = name || "Meteo";
 }
 
+export function setBossName(name) {
+  const el = $("boss-name");
+  if (el) el.textContent = (name && name.includes("VAMPIRI") ? "🧛 " : "👹 ") + (name || "BOSS");
+}
+
 export function setBossHP(hp, max) {
   const el = $("hud-boss");
   if (hp == null) { el.classList.add("hidden"); return; }

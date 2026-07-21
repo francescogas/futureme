@@ -3,11 +3,17 @@
 //  Monete, XP, livelli, sblocchi, achievement, daily, record.
 //  Tutta la valuta è guadagnabile giocando (nessun pagamento reale).
 // ============================================================
-import { FREE_OUTFITS, OUTFIT_PRICES, TRAILS, ACHIEVEMENTS } from "./data.js";
+import { FREE_OUTFITS, OUTFIT_PRICES, TRAILS, ACHIEVEMENTS, DAILY_CHALLENGES } from "./data.js";
 
 const KEY = "futureme_profile_v1";
 
 function todayStr() { return new Date().toISOString().slice(0, 10); }
+
+// Sfida del Giorno deterministica in base alla data (uguale per tutti nello stesso giorno)
+export function todayChallenge() {
+  const dayIndex = Math.floor(Date.now() / 86400000);
+  return DAILY_CHALLENGES[dayIndex % DAILY_CHALLENGES.length];
+}
 
 function fresh() {
   return {
@@ -19,6 +25,7 @@ function fresh() {
     equippedTrail: "none",
     achievements: {},
     dailyStreak: 0, lastDaily: "",
+    dailyChallengeDone: "",
     best: { fewestDeaths: null, mostChallengesCleared: 0, bestCombo: 0 },
     leaderboard: [],
   };
@@ -115,6 +122,16 @@ class ProfileManager {
     return { claimed: true, streak: this.p.dailyStreak, coins: reward };
   }
   dailyAvailable() { return this.p.lastDaily !== todayStr(); }
+
+  // ---- Sfida del Giorno ----
+  dailyChallengeAvailable() { return this.p.dailyChallengeDone !== todayStr(); }
+  completeDailyChallenge(reward) {
+    if (!this.dailyChallengeAvailable()) return false;
+    this.p.dailyChallengeDone = todayStr();
+    this.p.coins += reward;
+    this.save();
+    return true;
+  }
 
   // ---- achievement ----
   // Valuta gli achievement in base alle statistiche; ritorna la lista dei nuovi sbloccati

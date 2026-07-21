@@ -46,9 +46,9 @@ function weightedPick(table) {
 
 export class Weather {
   // key = id città o dimensione; worldRoot = gruppo pulito a ogni cambio scena
-  constructor(scene, worldRoot, key, theme) {
+  constructor(scene, worldRoot, key, theme, forcedType = null) {
     this.scene = scene;
-    this.type = weightedPick(WEATHER_TABLE[key] || WEATHER_TABLE.sun);
+    this.type = forcedType || weightedPick(WEATHER_TABLE[key] || WEATHER_TABLE.sun);
     this.particles = null;
     this.velocities = null;
     this.night = !!theme.night;

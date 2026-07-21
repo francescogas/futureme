@@ -42,7 +42,7 @@
     </div>
 
     <div class="hud-boss hidden" id="hud-boss">
-      <div class="boss-name">👹 GUARDIANO DELLA LUNA</div>
+      <div class="boss-name" id="boss-name">👹 GUARDIANO DELLA LUNA</div>
       <div class="boss-bar"><div class="boss-bar-fill" id="boss-bar-fill"></div></div>
     </div>
 
@@ -102,6 +102,15 @@
       <h1 class="game-logo">FUTURE<span>ME</span></h1>
       <p class="tagline">Le Tre Dimensioni · Terra · Luna · Sole</p>
       <p class="subtitle">Trova il tuo io negli altri mondi. Salva la realtà dall'implosione.</p>
+      <div id="daily-banner" class="daily-banner hidden">
+        <div class="db-left"><span class="db-icon" id="db-icon">🎯</span></div>
+        <div class="db-mid">
+          <div class="db-title">Sfida del Giorno · <span id="db-name">—</span></div>
+          <div class="db-desc" id="db-desc"></div>
+          <div class="db-goal" id="db-goal"></div>
+        </div>
+        <button id="btn-daily" class="db-btn">Gioca</button>
+      </div>
       <button id="btn-continue" class="big-btn hidden">↻ CONTINUA</button>
       <button id="btn-start" class="big-btn">▶ INIZIA L'AVVENTURA</button>
       <div class="title-row">

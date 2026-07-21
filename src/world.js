@@ -151,7 +151,8 @@ export function makeMonster(kind, x, z, elite = false) {
 }
 
 // ---------- Boss finale (Luna) ----------
-export function makeBoss(x, z) {
+export function makeBoss(x, z, variant = "guardian") {
+  if (variant === "vampire") return makeVampireLord(x, z);
   const g = new THREE.Group();
   const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.6, 1.4, 6, 12), stdMat(0x2a1035, { rough: 0.7, emissive: 0x3a0a3a, ei: 0.3 }));
   body.position.y = 1.5; g.add(body);
@@ -177,7 +178,41 @@ export function makeBoss(x, z) {
   const light = new THREE.PointLight(0xff2060, 1.2, 12);
   light.position.y = 2.5; g.add(light);
   g.position.set(x, 0, z);
-  g.userData = { kind: "boss", hp: 6, maxHp: 6, speed: 1.9, baseY: 0 };
+  g.userData = { kind: "boss", variant: "guardian", name: "GUARDIANO DELLA LUNA", hp: 6, maxHp: 6, speed: 1.9, baseY: 0 };
+  g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+  return g;
+}
+
+// Secondo boss: il Signore dei Vampiri (più veloce, si teletrasporta)
+function makeVampireLord(x, z) {
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.55, 1.4, 6, 12), stdMat(0x1a0a12, { rough: 0.5, emissive: 0x3a0010, ei: 0.3 }));
+  body.position.y = 1.5; g.add(body);
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.5, 16, 16), stdMat(0xe8dfe0, { rough: 0.5 }));
+  head.position.y = 2.85; g.add(head);
+  // occhi rossi ardenti
+  for (const sx of [-1, 1]) {
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 8), new THREE.MeshBasicMaterial({ color: 0xff1030 }));
+    eye.position.set(sx * 0.18, 2.9, 0.42); g.add(eye);
+  }
+  // zanne
+  for (const sx of [-1, 1]) {
+    const fang = new THREE.Mesh(new THREE.ConeGeometry(0.05, 0.18, 4), stdMat(0xffffff));
+    fang.position.set(sx * 0.1, 2.62, 0.42); fang.rotation.x = Math.PI; g.add(fang);
+  }
+  // colletto alto del mantello
+  const collar = new THREE.Mesh(new THREE.ConeGeometry(0.9, 1.0, 12, 1, true), stdMat(0x6a0010, { rough: 0.4, emissive: 0x3a0008, ei: 0.3 }));
+  collar.material.side = THREE.DoubleSide; collar.position.y = 2.6; g.add(collar);
+  // ali da pipistrello
+  for (const sx of [-1, 1]) {
+    const wing = new THREE.Mesh(new THREE.PlaneGeometry(2.2, 1.6), stdMat(0x2a0010, { rough: 0.6 }));
+    wing.material.side = THREE.DoubleSide;
+    wing.position.set(sx * 1.4, 2.0, -0.3); wing.rotation.y = sx * 0.9; g.add(wing);
+  }
+  const light = new THREE.PointLight(0xff1040, 1.4, 14);
+  light.position.y = 2.5; g.add(light);
+  g.position.set(x, 0, z);
+  g.userData = { kind: "boss", variant: "vampire", name: "SIGNORE DEI VAMPIRI", hp: 7, maxHp: 7, speed: 2.6, baseY: 0, teleTimer: 3 };
   g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
   return g;
 }

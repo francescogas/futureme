@@ -80,8 +80,13 @@ export class Game {
   }
 
   // ---------- Nuova partita (o ripresa da salvataggio) ----------
-  start(charConfig, savedState = null) {
+  start(charConfig, savedState = null, daily = null) {
     this.charConfig = charConfig;
+    this.daily = daily;                 // sfida del giorno attiva (o null)
+    this.dailyMod = daily ? daily.mod : null;
+    this.dailyCompleted = false;
+    this.runBanished = 0;
+    this.runSealed = 0;
     const fresh = {
       dim: "earth", level: 1, challenges: 1000, deaths: 0,
       hp: 5, maxHp: 5, inventory: {}, cityName: "",
@@ -142,7 +147,8 @@ export class Game {
     this._setupLighting(dimId, built.theme);
     // meteo dinamico
     const weatherKey = dimId === "earth" && this.city ? this.city.id : dimId;
-    this.weather = new Weather(this.scene, this.worldRoot, weatherKey, built.theme);
+    const forcedWeather = this.dailyMod === "foggy" ? "fog" : null;
+    this.weather = new Weather(this.scene, this.worldRoot, weatherKey, built.theme, forcedWeather);
     UI.setWeather(this.weather.label.emoji, this.weather.label.name);
     if (this.audio) this.audio.setWeatherAmbience(this.weather.type);
     UI.setMood(dimId, this.weather.type);
@@ -335,7 +341,7 @@ export class Game {
       // portale di uscita verso il Sole
       this._addPortal(makePortal(0, -16, DIMENSIONS.sun.color, false), { dest: "sun", need: null, label: "Portale verso il Sole" });
       // mostri (alcuni d'élite dai livelli avanzati)
-      const nMon = 3 + level;
+      const nMon = 3 + level + (this.dailyMod === "horde" ? 4 : 0);
       const types = ["zombie", "vampire", "werewolf"];
       const nElite = Math.max(0, Math.floor((level - 1) / 2));
       for (let i = 0; i < nMon; i++) {
@@ -387,9 +393,11 @@ export class Game {
     const ax = this.alter ? this.alter.position.x : 0;
     const az = this.alter ? this.alter.position.z : 0;
     const bx = ax * 0.82, bz = az * 0.82;
-    const boss = makeBoss(bx, bz);
+    const variant = Math.random() < 0.4 ? "vampire" : "guardian";
+    const boss = makeBoss(bx, bz, variant);
     this.boss = boss;
     this.worldRoot.add(boss);
+    UI.setBossName(boss.userData.name);
   }
 
   _addItem(o) { this.objects.items.push(o); this.worldRoot.add(o); }
@@ -535,8 +543,10 @@ export class Game {
     this.worldRoot.remove(m);
     this.state.monstersBanished++;
     Profile.addBanish(1);
+    this.runBanished++;
     this._bumpCombo();
     this._reward("banish");
+    this._checkDaily("banish");
     this._progress(15);
     if (this.audio) this.audio.banish();
     UI.toast(`💥 Mostro respinto con ${ITEMS[defense].emoji}!`, 1500);
@@ -546,9 +556,10 @@ export class Game {
 
   // ---------- Boss finale ----------
   _attackBoss() {
+    const bossName = this.boss.userData.name;
     const defense = ["torch", "silver", "cross", "garlic"].find((t) => this._hasItem(t));
     if (!defense) {
-      UI.openDialog("Il Guardiano della Luna", "Serve un'arma per colpirlo! Raccogli 🔦 torce, ⚙️ argento, ✝️ croci o 🧄 aglio.", [{ label: "Indietro", cb: UI.closeDialog }]);
+      UI.openDialog(bossName, "Serve un'arma per colpirlo! Raccogli 🔦 torce, ⚙️ argento, ✝️ croci o 🧄 aglio.", [{ label: "Indietro", cb: UI.closeDialog }]);
       return;
     }
     this._takeItem(defense);
@@ -572,9 +583,9 @@ export class Game {
       this._reward("bossKill");
       this._unlockAch("boss_slayer");
       if (this.audio) { this.audio.seal(); this.audio.setBossProximity(0); }
-      UI.openDialog("Il Guardiano è caduto!", "Hai sconfitto il Guardiano della Luna. Ora puoi raggiungere il tuo io imprigionato e usare la pozione magica.", [{ label: "Avanti!", primary: true, cb: UI.closeDialog }]);
+      UI.openDialog(`${bossName} è caduto!`, "L'hai sconfitto! Ora puoi raggiungere il tuo io imprigionato e usare la pozione magica.", [{ label: "Avanti!", primary: true, cb: UI.closeDialog }]);
     } else {
-      UI.toast(`⚔️ Guardiano colpito! (${this.boss.userData.hp}/${this.boss.userData.maxHp})`, 1400);
+      UI.toast(`⚔️ Colpito! (${this.boss.userData.hp}/${this.boss.userData.maxHp})`, 1400);
     }
   }
 
@@ -591,8 +602,10 @@ export class Game {
       p.userData.ring.material.emissiveIntensity = 0.2;
       p.userData.disc.material.opacity = 0.1;
       this.state.portalsClosed++;
+      this.runSealed++;
       this._progress(30);
       this._reward("seal");
+      this._checkDaily("seal");
       if (this.audio) this.audio.seal();
       UI.toast(`🔒 Portale sigillato! (${ITEMS[defense].emoji} usato)`);
       this._checkMoonCleared();
@@ -675,13 +688,15 @@ export class Game {
     if (this.combo >= 2) UI.showCombo(this.combo);
     Profile.recordBestCombo(this.combo);
     if (this.combo >= 5) this._unlockAch("combo5");
+    this._checkDaily("combo");
   }
-  get comboMul() { return 1 + Math.min(this.combo, 15) * 0.1; }
+  get comboMul() { return 1 + Math.min(this.combo, 15) * (this.dailyMod === "comboBoost" ? 0.2 : 0.1); }
 
   _reward(event) {
     const r = REWARDS[event]; if (!r) return;
     let coins = Math.round(r.coins * (event === "pickup" || event === "banish" ? this.comboMul : 1));
     if (this.powerups.coins2x > 0) coins *= 2;
+    if (this.dailyMod === "doubleCoins") coins *= 2;
     this.runScore += coins;
     Profile.addCoins(coins);
     const lv = Profile.addXP(r.xp);
@@ -690,6 +705,25 @@ export class Game {
     UI.coinPopup(coins);
     if (lv.leveledUp) { UI.levelUp(lv.to); if (this.audio) this.audio.seal(); }
     this._checkAchievements();
+    this._checkDaily("coins");
+  }
+
+  // Verifica il completamento della Sfida del Giorno
+  _checkDaily() {
+    if (!this.daily || this.dailyCompleted) return;
+    const g = this.daily;
+    let progress = 0;
+    if (g.goalType === "coins") progress = this.runScore;
+    else if (g.goalType === "combo") progress = this.combo;
+    else if (g.goalType === "banish") progress = this.runBanished;
+    else if (g.goalType === "seal") progress = this.runSealed;
+    if (progress >= g.goalAmount) {
+      this.dailyCompleted = true;
+      Profile.completeDailyChallenge(g.reward);
+      UI.setCoins(Profile.coins);
+      if (this.audio) this.audio.victory();
+      UI.achievementToast({ icon: g.icon, name: "Sfida del Giorno completata!", desc: `${g.name} · +${g.reward} 🪙` });
+    }
   }
 
   _unlockAch(id, flags) {
@@ -788,6 +822,7 @@ export class Game {
     const run = this.keys.has("ShiftLeft") || this.keys.has("ShiftRight");
     let moveMul = this.weather ? this.weather.mods.moveMul : 1;
     if (this.powerups.speed > 0) moveMul *= 1.6;
+    if (this.dailyMod === "alwaysFast") moveMul *= 1.4;
     const speed = (run ? 9 : 5) * moveMul * dt;
     let mx = 0, mz = 0;
     if (this.keys.has("KeyW") || this.keys.has("ArrowUp")) mz -= 1;
@@ -877,6 +912,18 @@ export class Game {
     }
     // Boss: insegue e colpisce più forte
     if (this.boss) {
+      // Signore dei Vampiri: si teletrasporta vicino al giocatore
+      if (!frozen && this.boss.userData.variant === "vampire") {
+        this.boss.userData.teleTimer -= dt;
+        if (this.boss.userData.teleTimer <= 0) {
+          this.boss.userData.teleTimer = rand(3.5, 5.5);
+          this._spawnBurst(this.boss.position.x, 2, this.boss.position.z, 0xff1040, 20);
+          const a = rand(0, Math.PI * 2), r = rand(5, 8);
+          this.boss.position.x = px + Math.cos(a) * r;
+          this.boss.position.z = pz + Math.sin(a) * r;
+          this._spawnBurst(this.boss.position.x, 2, this.boss.position.z, 0xff1040, 20);
+        }
+      }
       const dx = px - this.boss.position.x, dz = pz - this.boss.position.z;
       const d = Math.hypot(dx, dz);
       if (!frozen && d < 30 && d > 0.01) {

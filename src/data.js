@@ -120,6 +120,15 @@ export const REWARDS = {
   city:     { coins: 15,  xp: 20 },
 };
 
+// Sfide del Giorno (evento a rotazione, scelto in base alla data)
+export const DAILY_CHALLENGES = [
+  { id: "gold_rush",   name: "Corsa all'Oro",     icon: "💰", desc: "Monete raddoppiate per tutta la partita.",      mod: "doubleCoins", goalType: "coins",  goalAmount: 400, goalDesc: "Guadagna 400 monete",  reward: 300 },
+  { id: "combo_master",name: "Maestro Combo",      icon: "🔥", desc: "Il moltiplicatore combo sale più in fretta.",   mod: "comboBoost",  goalType: "combo",  goalAmount: 8,   goalDesc: "Raggiungi combo x8", reward: 300 },
+  { id: "horde",       name: "Notte dell'Orda",    icon: "🧟", desc: "Più mostri sulla Luna... e più ricompense.",    mod: "horde",       goalType: "banish", goalAmount: 15,  goalDesc: "Respingi 15 mostri", reward: 350 },
+  { id: "sprint",      name: "Sprint Dimensionale",icon: "⚡", desc: "Sei sempre veloce. Sigilla i portali!",         mod: "alwaysFast",  goalType: "seal",   goalAmount: 3,   goalDesc: "Sigilla 3 portali",  reward: 300 },
+  { id: "eclipse",     name: "Eclissi",            icon: "🌫️", desc: "Nebbia ovunque: i mostri ti vedono a fatica.", mod: "foggy",       goalType: "coins",  goalAmount: 300, goalDesc: "Guadagna 300 monete", reward: 300 },
+];
+
 // Obiettivi/achievement (id, nome, descrizione, icona, soglia opzionale)
 export const ACHIEVEMENTS = [
   { id: "first_key",   name: "Prima Chiave",         desc: "Raccogli la tua prima chiave",       icon: "🔑" },

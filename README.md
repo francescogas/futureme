@@ -45,6 +45,13 @@ dello schermo per ruotare la telecamera.
 - **Negozio di cosmetici**: sblocca **stili di abiti** e **scie luminose**
   (compresa una scia arcobaleno animata) con le monete guadagnate giocando.
 - **Obiettivi/Achievement**: 10 traguardi da sbloccare, con notifica animata.
+- **Sfida del Giorno**: un evento a rotazione (uguale per tutti nello stesso
+  giorno) con un **modificatore** diverso — Corsa all'Oro (monete doppie),
+  Maestro Combo, Notte dell'Orda, Sprint Dimensionale, Eclissi (nebbia ovunque) —
+  un **obiettivo** da centrare e una **ricompensa** in monete. Banner dedicato
+  sul titolo.
+- **Due boss diversi**: oltre al Guardiano della Luna può comparire il
+  **Signore dei Vampiri** (più veloce, si teletrasporta vicino a te), per varietà.
 - **Ricompensa giornaliera** con **serie di accessi** (streak) che cresce ogni
   giorno — il classico hook di ritorno.
 - **Record personali** e statistiche mostrati sul titolo (morti minime, sfide
