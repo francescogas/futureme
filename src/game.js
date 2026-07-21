@@ -1210,7 +1210,10 @@ export class Game {
     let moving = 0;
     if (mx || mz) {
       const len = Math.hypot(mx, mz); mx /= len; mz /= len;
-      const fwd = -mz, rgt = mx;
+      // fwd = avanti (su); rgt = destra sullo schermo. La "destra" della vista
+      // corrisponde al mondo -X (telecamera dietro che guarda verso +Z),
+      // quindi la componente laterale è negata.
+      const fwd = -mz, rgt = -mx;
       let dx, dz;
       if (fromTouch) {
         // MOBILE: direzioni relative alla vista agganciata (_moveRefYaw).
