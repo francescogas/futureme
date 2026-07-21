@@ -7,8 +7,9 @@ import {
   buildDimension, makeItem, makePortal, makeNPC, makeMonster,
   makeAlterEgo, makeBoss, animateWorldObjects,
 } from "./world.js";
-import { DIMENSIONS, POTION_RECIPE, NPC_LINES, ITEMS } from "./data.js";
+import { DIMENSIONS, POTION_RECIPE, NPC_LINES, CITY_NPCS, ITEMS } from "./data.js";
 import { Minimap } from "./minimap.js";
+import { Weather } from "./weather.js";
 import * as UI from "./ui.js";
 
 const rand = (a, b) => a + Math.random() * (b - a);
@@ -108,6 +109,7 @@ export class Game {
     this.alter = null;
     this.alterBeam = null;
     this.boss = null;
+    this.weather = null;
     UI.setBossHP(null);
 
     this.state.dim = dimId;
@@ -123,6 +125,10 @@ export class Game {
     this.scene.add(this.worldRoot);
 
     this._setupLighting(dimId, built.theme);
+    // meteo dinamico
+    const weatherKey = dimId === "earth" && this.city ? this.city.id : dimId;
+    this.weather = new Weather(this.scene, this.worldRoot, weatherKey, built.theme);
+    UI.setWeather(this.weather.label.emoji, this.weather.label.name);
     this._populate(dimId, level);
 
     // posiziona il giocatore al centro
@@ -140,6 +146,9 @@ export class Game {
       UI.cityBanner(DIMENSIONS[dimId].name, "Dimensione", DIMENSIONS[dimId].emoji + " " + DIMENSIONS[dimId].desc.split(".")[0]);
     }
     if (spawnMsg) UI.toast(spawnMsg);
+    else if (this.weather && this.weather.type !== "clear") {
+      setTimeout(() => UI.toast(`${this.weather.label.emoji} ${this.weather.label.name}`, 2000), 1400);
+    }
   }
 
   _setupLighting(dimId, theme) {
@@ -350,7 +359,12 @@ export class Game {
 
   _talkNPC(n) {
     if (this.audio) this.audio.talk();
-    const line = pick(NPC_LINES[this.state.dim]);
+    // dialoghi locali per le città della Terra, altrimenti generici
+    let speaker = "Persona strana", line;
+    const cityNpc = this.state.dim === "earth" && this.city ? CITY_NPCS[this.city.id] : null;
+    if (cityNpc) { speaker = cityNpc.speaker; line = pick(cityNpc.lines); }
+    else { line = pick(NPC_LINES[this.state.dim]); }
+
     if (!n.userData.talked) {
       n.userData.talked = true;
       this.state.talkedNPCs++;
@@ -360,13 +374,13 @@ export class Game {
     if (!this.state.quest && !n.userData.questGiven) {
       const q = this._makeQuest();
       n.userData.questGiven = true;
-      UI.openDialog("Persona strana", line + "\n\n« " + q.desc + " »", [
+      UI.openDialog(speaker, line + "\n\n« " + q.desc + " »", [
         { label: "Accetto la sfida", primary: true, cb: () => { UI.closeDialog(); this._assignQuest(q); } },
         { label: "Più tardi", cb: () => UI.closeDialog() },
       ]);
       return;
     }
-    UI.openDialog("Persona strana", line, [{ label: "Capito", primary: true, cb: () => UI.closeDialog() }]);
+    UI.openDialog(speaker, line, [{ label: "Capito", primary: true, cb: () => UI.closeDialog() }]);
   }
 
   // ---------- Sistema di missioni (sfide extra) ----------
@@ -595,6 +609,7 @@ export class Game {
     this._updatePickups();
     this._updateProximityHints();
     animateWorldObjects(this.objects, t, dt);
+    if (this.weather) this.weather.update(dt, t);
     if (this.alterBeam) this.alterBeam.material.opacity = 0.2 + Math.sin(t * 3) * 0.12;
     this.minimap.render(this);
 

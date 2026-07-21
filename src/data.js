@@ -93,6 +93,58 @@ export const ITEMS = {
 // Ingredienti richiesti per la pozione magica (raccolti nel Sole)
 export const POTION_RECIPE = ["herb", "crystal", "sunfruit"];
 
+// NPC a tema per ogni città reale: nome dell'abitante + battute locali
+export const CITY_NPCS = {
+  roma: {
+    speaker: "Abitante di Roma",
+    lines: [
+      "«Ciao! Benvenuto nella Città Eterna. Dicono che sotto il Colosseo ci sia un portale...»",
+      "«Tutte le strade portano a Roma, ma solo una chiave porta al tuo io.»",
+      "«Attento, viaggiatore: i gladiatori del tempo custodiscono i passaggi.»",
+    ],
+  },
+  tokyo: {
+    speaker: "住民 di Tokyo",
+    lines: [
+      "«Konnichiwa! Le luci al neon nascondono i portali. Guarda oltre il bagliore.»",
+      "«Passa sotto il torii rosso e purificati prima di viaggiare tra i mondi.»",
+      "«La Tokyo Tower brilla anche di notte: seguila per non perderti.»",
+    ],
+  },
+  newyork: {
+    speaker: "New Yorker",
+    lines: [
+      "«Hey! Nella città che non dorme mai, i portali aprono a ogni angolo.»",
+      "«La Statua della Libertà veglia sui viaggiatori. Prendi un taxi... o un portale!»",
+      "«Big Apple, big secrets. Cerca le chiavi tra i grattacieli.»",
+    ],
+  },
+  venezia: {
+    speaker: "Veneziano",
+    lines: [
+      "«Ciao! Qui si viaggia in gondola... o attraverso i portali sul Canal Grande.»",
+      "«Il Campanile di San Marco indica la via. Segui l'acqua e troverai un passaggio.»",
+      "«Attento ai ponti: alcuni scendono in mondi che è meglio non vedere.»",
+    ],
+  },
+  parigi: {
+    speaker: "Parisien",
+    lines: [
+      "«Bonjour! Dalla cima della Torre Eiffel si vedono tutti i mondi paralleli.»",
+      "«L'amour e i portali: entrambi ti portano dove non t'aspetti, mon ami.»",
+      "«Passa sotto l'Arco di Trionfo e la fortuna ti sorriderà.»",
+    ],
+  },
+  cairo: {
+    speaker: "Abitante del Cairo",
+    lines: [
+      "«Salam! Le piramidi custodiscono portali più antichi del tempo stesso.»",
+      "«La Sfinge conosce l'enigma: solo chi ha il passaporto giusto passa oltre.»",
+      "«Il deserto inganna. Segui le palme e troverai la via verso il tuo io.»",
+    ],
+  },
+};
+
 // Frasi degli NPC "persone strane"
 export const NPC_LINES = {
   earth: [

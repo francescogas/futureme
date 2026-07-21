@@ -51,6 +51,13 @@ export function setQuest(text) {
   el.classList.remove("hidden");
 }
 
+export function setWeather(emoji, name) {
+  const el = $("hud-weather");
+  if (!el) return;
+  el.textContent = emoji || "";
+  el.title = name || "Meteo";
+}
+
 export function setBossHP(hp, max) {
   const el = $("hud-boss");
   if (hp == null) { el.classList.add("hidden"); return; }

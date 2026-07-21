@@ -65,6 +65,13 @@ dello schermo per ruotare la telecamera.
   prigioniero e forse è diventato malvagio: solo la pozione del Sole può salvarlo
   e portarlo nella luce.
 - **Contatore Sfide** — parti da **1000**; ogni volta che muori aumentano di **100**.
+- **Meteo dinamico**: ogni volta che entri in una città il tempo cambia —
+  ☀️ sereno, ⛅ nuvoloso, 🌧️ pioggia, ❄️ neve, 🌫️ nebbia, 🌪️ tempesta di sabbia
+  (al Cairo) — con effetti particellari e nebbia che ne modificano l'atmosfera.
+  L'indicatore è accanto al nome della città.
+- **NPC a tema locale**: in ogni città incontri abitanti con nome e dialoghi
+  propri (un romano, un veneziano, un parigino, un newyorkese, un cairota...),
+  con saluti e indizi locali.
 - **Persone strane** (NPC) che ti danno indizi e **missioni extra** (bandisci N
   mostri, raccogli N chiavi, componi la pozione...) con ricompense.
 - **Combattimento**: sulla Luna avvicinati ai mostri e premi **E** per respingerli
@@ -106,6 +113,7 @@ src/
   minimap.js        # radar/minimappa 2D su canvas
   save.js           # salvataggio progressi (localStorage)
   touch.js          # controlli touch per mobile (joystick + azione)
+  weather.js        # meteo dinamico (pioggia, neve, nebbia, sabbia, nuvole)
 ```
 
 ## 🛠️ Note tecniche
