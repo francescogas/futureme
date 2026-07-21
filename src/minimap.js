@@ -69,6 +69,8 @@ export class Minimap {
     for (const m of game.objects.monsters) dot(m.position.x, m.position.z, "#ff2020", 3, true);
     // alter ego
     if (game.alter) dot(game.alter.position.x, game.alter.position.z, game.alter.userData.evil ? "#ff2040" : "#4df3ff", 4, true);
+    // boss
+    if (game.boss) dot(game.boss.position.x, game.boss.position.z, "#ff3366", 5, true);
 
     // giocatore al centro (triangolo che punta in alto)
     ctx.fillStyle = "#ffffff";

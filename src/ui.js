@@ -39,6 +39,13 @@ export function setQuest(text) {
   el.classList.remove("hidden");
 }
 
+export function setBossHP(hp, max) {
+  const el = $("hud-boss");
+  if (hp == null) { el.classList.add("hidden"); return; }
+  $("boss-bar-fill").style.width = `${Math.max(0, (hp / max) * 100)}%`;
+  el.classList.remove("hidden");
+}
+
 export function updateHUD(state) {
   const dim = DIMENSIONS[state.dim];
   $("hud-dim-icon").textContent = dim.emoji;

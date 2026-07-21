@@ -119,6 +119,38 @@ export function makeMonster(kind, x, z) {
   return g;
 }
 
+// ---------- Boss finale (Luna) ----------
+export function makeBoss(x, z) {
+  const g = new THREE.Group();
+  const body = new THREE.Mesh(new THREE.CapsuleGeometry(0.6, 1.4, 6, 12), stdMat(0x2a1035, { rough: 0.7, emissive: 0x3a0a3a, ei: 0.3 }));
+  body.position.y = 1.5; g.add(body);
+  const head = new THREE.Mesh(new THREE.SphereGeometry(0.55, 16, 16), stdMat(0x1a0a20, { rough: 0.6, emissive: 0x5a0a2a, ei: 0.4 }));
+  head.position.y = 2.9; g.add(head);
+  // corona
+  for (let i = 0; i < 6; i++) {
+    const spike = new THREE.Mesh(new THREE.ConeGeometry(0.12, 0.4, 4), stdMat(0xff3366, { emissive: 0xff3366, ei: 0.8 }));
+    const a = (i / 6) * Math.PI * 2;
+    spike.position.set(Math.cos(a) * 0.45, 3.35, Math.sin(a) * 0.45);
+    g.add(spike);
+  }
+  // occhi
+  for (const sx of [-1, 1]) {
+    const eye = new THREE.Mesh(new THREE.SphereGeometry(0.1, 8, 8), new THREE.MeshBasicMaterial({ color: 0xffcc00 }));
+    eye.position.set(sx * 0.2, 2.95, 0.45); g.add(eye);
+  }
+  // braccia artigliate
+  for (const sx of [-1, 1]) {
+    const arm = new THREE.Mesh(new THREE.CapsuleGeometry(0.14, 0.9, 4, 8), stdMat(0x2a1035));
+    arm.position.set(sx * 0.8, 1.7, 0); arm.rotation.z = sx * 0.5; g.add(arm);
+  }
+  const light = new THREE.PointLight(0xff2060, 1.2, 12);
+  light.position.y = 2.5; g.add(light);
+  g.position.set(x, 0, z);
+  g.userData = { kind: "boss", hp: 6, maxHp: 6, speed: 1.9, baseY: 0 };
+  g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
+  return g;
+}
+
 // ---------- Alternate self ----------
 export function makeAlterEgo(avatarGroup, evil) {
   const clone = avatarGroup.clone(true);
@@ -126,9 +158,13 @@ export function makeAlterEgo(avatarGroup, evil) {
     if (o.isMesh && o.material) {
       o.material = o.material.clone();
       if (evil) {
-        o.material.emissive = new THREE.Color(0xff1030);
-        o.material.emissiveIntensity = 0.4;
-        o.material.color.multiplyScalar(0.55);
+        // solo i materiali standard hanno l'uniform "emissive" nello shader:
+        // impostarla su un MeshBasicMaterial (es. l'aura) romperebbe il rendering
+        if (o.material.isMeshStandardMaterial) {
+          o.material.emissive = new THREE.Color(0xff1030);
+          o.material.emissiveIntensity = 0.4;
+        }
+        if (o.material.color) o.material.color.multiplyScalar(0.55);
       }
     }
   });

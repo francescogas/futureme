@@ -179,6 +179,35 @@ h2 { margin-bottom: 14px; font-size: 26px; }
   border-radius: 30px; padding: 8px 20px; font-size: 14px; color: #d6e2ff; max-width: 90vw; text-align: center;
 }
 
+/* ---------- Controlli touch ---------- */
+#touch-controls { position: absolute; inset: 0; pointer-events: none; z-index: 11; }
+#joystick {
+  position: absolute; left: 26px; bottom: 26px; width: 120px; height: 120px;
+  border-radius: 50%; background: rgba(12,16,34,0.5); border: 2px solid var(--panel-border);
+  pointer-events: auto; touch-action: none;
+}
+#joystick-knob {
+  position: absolute; left: 50%; top: 50%; width: 52px; height: 52px; margin: -26px 0 0 -26px;
+  border-radius: 50%; background: linear-gradient(135deg, var(--neon), var(--neon2));
+  box-shadow: 0 4px 16px rgba(77,243,255,0.5);
+}
+#btn-action {
+  position: absolute; right: 40px; bottom: 200px; width: 84px; height: 84px;
+  border-radius: 50%; font-size: 26px; font-weight: 800; color: #041018;
+  background: linear-gradient(135deg, var(--gold), #ff9f43);
+  border: none; pointer-events: auto; touch-action: none;
+  box-shadow: 0 4px 20px rgba(255,211,92,0.5);
+}
+#btn-action:active { transform: scale(0.94); }
+
+.hud-boss {
+  position: absolute; top: 96px; left: 50%; transform: translateX(-50%);
+  width: min(420px, 80vw); text-align: center;
+}
+.boss-name { font-size: 13px; letter-spacing: 2px; color: var(--danger); margin-bottom: 5px; text-shadow: 0 0 12px rgba(255,77,109,0.7); }
+.boss-bar { height: 14px; border-radius: 10px; background: rgba(20,10,20,0.8); border: 1px solid var(--danger); overflow: hidden; }
+.boss-bar-fill { height: 100%; width: 100%; background: linear-gradient(90deg, #ff2040, #ff6b9d); transition: width .2s; }
+
 .minimap-wrap {
   position: absolute; bottom: 14px; right: 14px; pointer-events: none;
   display: flex; flex-direction: column; align-items: center;

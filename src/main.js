@@ -6,10 +6,13 @@ import { Game } from "./game.js";
 import { buildAvatar, animateAvatar } from "./character.js";
 import { SPECIES, SEXES, OUTFITS, SKIN_COLORS, DIMENSIONS } from "./data.js";
 import { AudioManager } from "./audio.js";
+import { Save } from "./save.js";
+import { setupTouch, isTouchDevice } from "./touch.js";
 import * as UI from "./ui.js";
 
 const $ = (id) => document.getElementById(id);
 const audio = new AudioManager();
+let touchUI = null;
 
 // ---------- Config personaggio corrente ----------
 const charConfig = {
@@ -189,20 +192,27 @@ function showScreen(id) {
 // ============================================================
 let game = null;
 
-function startGame(startDim) {
-  showScreen(null);
-  UI.hide("screen-dimension");
-  UI.show("hud");
+function ensureGame() {
   audio.init();
   audio.resume();
   if (!game) {
     game = new Game($("scene"), {
       onDeath: (state) => onDeath(state),
       onVictory: (state) => onVictory(state),
-      onStateChange: (state) => UI.updateHUD(state),
+      onStateChange: (state) => { UI.updateHUD(state); Save.write(charConfig, state); },
       audio,
     });
+    touchUI = setupTouch(game);
+    window.__futuremeGame = game; // hook per debug/test
   }
+  if (touchUI) { isTouchDevice() ? touchUI.show() : touchUI.hide(); }
+}
+
+function startGame(startDim) {
+  showScreen(null);
+  UI.hide("screen-dimension");
+  UI.show("hud");
+  ensureGame();
   UI.setQuest(null);
   game.start(charConfig);
   // se l'utente ha scelto una dimensione diversa dalla Terra, viaggia subito
@@ -211,6 +221,19 @@ function startGame(startDim) {
   }
   UI.updateHUD(game.state);
   UI.toast(`Benvenuto${charConfig.name ? ", " + charConfig.name : ""}! La tua avventura inizia.`, 3000);
+}
+
+function continueGame() {
+  const save = Save.read();
+  if (!save) return;
+  Object.assign(charConfig, save.char);
+  showScreen(null);
+  UI.show("hud");
+  ensureGame();
+  UI.setQuest(null);
+  game.start(charConfig, save.state);
+  UI.updateHUD(game.state);
+  UI.toast(`Bentornato${charConfig.name ? ", " + charConfig.name : ""}! Riprendi da ${DIMENSIONS[save.state.dim].name}.`, 3000);
 }
 
 function onDeath(state) {
@@ -227,6 +250,7 @@ function onDeath(state) {
 }
 
 function onVictory(state) {
+  Save.clear();
   UI.hide("hud");
   const name = charConfig.name || "Eroe";
   $("victory-text").innerHTML =
@@ -241,17 +265,27 @@ function onVictory(state) {
 // ============================================================
 let preview;
 
+function refreshContinueButton() {
+  const btn = $("btn-continue");
+  if (Save.has()) btn.classList.remove("hidden");
+  else btn.classList.add("hidden");
+}
+
 function init() {
   preview = new CreatorPreview($(".creator-right") || document.querySelector(".creator-right"));
   setupCreatorControls();
   buildDimensionCards();
 
   $("btn-start").onclick = () => { audio.init(); showScreen("screen-creator"); };
+  $("btn-continue").onclick = () => continueGame();
 
   $("btn-mute").onclick = () => {
     const muted = audio.toggleMute();
     $("btn-mute").textContent = muted ? "🔇" : "🔊";
   };
+
+  // mostra "Continua" se esiste un salvataggio
+  refreshContinueButton();
   $("btn-howto").onclick = () => showScreen("screen-howto");
   $("btn-howto-back").onclick = () => showScreen("screen-title");
   $("btn-creator-back").onclick = () => showScreen("screen-title");
@@ -263,7 +297,7 @@ function init() {
 
   $("btn-pause").onclick = () => { game.pause(); UI.hide("hud"); showScreen("screen-pause"); };
   $("btn-resume").onclick = () => { showScreen(null); UI.show("hud"); audio.resume(); game.resume(); };
-  $("btn-quit").onclick = () => { game.pause(); UI.hide("hud"); showScreen("screen-title"); };
+  $("btn-quit").onclick = () => { game.pause(); UI.hide("hud"); refreshContinueButton(); showScreen("screen-title"); };
 
   // Esc = pausa
   window.addEventListener("keydown", (e) => {

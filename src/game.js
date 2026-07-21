@@ -5,7 +5,7 @@ import * as THREE from "three";
 import { buildAvatar, animateAvatar } from "./character.js";
 import {
   buildDimension, makeItem, makePortal, makeNPC, makeMonster,
-  makeAlterEgo, animateWorldObjects,
+  makeAlterEgo, makeBoss, animateWorldObjects,
 } from "./world.js";
 import { DIMENSIONS, POTION_RECIPE, NPC_LINES, ITEMS } from "./data.js";
 import { Minimap } from "./minimap.js";
@@ -28,6 +28,7 @@ export class Game {
     this.yaw = 0; this.pitch = 0.35;
     this.hitCooldown = 0;
     this.interactLock = 0;
+    this.touchMove = { x: 0, z: 0 };
 
     this._initRenderer();
     this._initInput();
@@ -71,32 +72,25 @@ export class Game {
     });
   }
 
-  // ---------- Nuova partita ----------
-  start(charConfig) {
+  // ---------- Nuova partita (o ripresa da salvataggio) ----------
+  start(charConfig, savedState = null) {
     this.charConfig = charConfig;
-    this.state = {
-      dim: "earth",
-      level: 1,
-      challenges: 1000,
-      deaths: 0,
-      hp: 5, maxHp: 5,
-      inventory: {},
-      cityName: "",
-      potionReady: false,
-      alterFreed: false,
-      talkedNPCs: 0,
-      portalsClosed: 0,
-      keysFound: 0,
-      monstersBanished: 0,
-      quest: null,
+    const fresh = {
+      dim: "earth", level: 1, challenges: 1000, deaths: 0,
+      hp: 5, maxHp: 5, inventory: {}, cityName: "",
+      potionReady: false, alterFreed: false, talkedNPCs: 0,
+      portalsClosed: 0, keysFound: 0, monstersBanished: 0, quest: null,
     };
+    this.state = savedState ? { ...fresh, ...savedState, quest: null } : fresh;
+    if (this.state.hp <= 0) this.state.hp = this.state.maxHp;
+
     // avatar del giocatore
     const built = buildAvatar(charConfig);
     this.player = built.group;
     this.playerParts = built.parts;
     this.avatarTemplate = built.group; // per clonare l'alter ego
 
-    this.loadDimension("earth", 1);
+    this.loadDimension(this.state.dim, this.state.level);
     this.running = true;
     this.clock.start();
     this._loop();
@@ -113,6 +107,8 @@ export class Game {
     this.scene.clear();
     this.alter = null;
     this.alterBeam = null;
+    this.boss = null;
+    UI.setBossHP(null);
 
     this.state.dim = dimId;
     this.state.level = level;
@@ -228,6 +224,8 @@ export class Game {
       for (let i = 0; i < 1; i++) { const n = spawnAt((x, z) => makeNPC(x, z, 0x9060ff)); this._addNPC(n); }
       // il tuo io prigioniero (evil)
       this._spawnAlterEgo(true);
+      // boss guardiano vicino al tuo io
+      this._spawnBoss();
     }
 
     else { // sun
@@ -249,15 +247,25 @@ export class Game {
     alter.position.set(Math.cos(a) * r, 0, Math.sin(a) * r);
     alter.userData = { kind: "alter", evil };
     this.alter = alter;
-    this.scene.add(alter);
+    this.worldRoot.add(alter);
     // marcatore luminoso sopra la testa
     const beam = new THREE.Mesh(
       new THREE.CylinderGeometry(0.15, 0.15, 8, 8),
       new THREE.MeshBasicMaterial({ color: evil ? 0xff2040 : 0x4df3ff, transparent: true, opacity: 0.3 })
     );
     beam.position.set(alter.position.x, 4, alter.position.z);
-    this.scene.add(beam);
+    this.worldRoot.add(beam);
     this.alterBeam = beam;
+  }
+
+  _spawnBoss() {
+    // posiziona il boss come guardiano davanti al tuo io prigioniero
+    const ax = this.alter ? this.alter.position.x : 0;
+    const az = this.alter ? this.alter.position.z : 0;
+    const bx = ax * 0.82, bz = az * 0.82;
+    const boss = makeBoss(bx, bz);
+    this.boss = boss;
+    this.worldRoot.add(boss);
   }
 
   _addItem(o) { this.objects.items.push(o); this.worldRoot.add(o); }
@@ -275,11 +283,21 @@ export class Game {
     else UI.setObjective("raccogli i 3 ingredienti della pozione: 🌿 💎 🍊.");
   }
 
+  // ---------- API pubbliche per i controlli touch ----------
+  setTouchMove(x, z) { this.touchMove.x = x; this.touchMove.z = z; }
+  interact() { if (this.running) this._tryInteract(); }
+
   // ---------- Interazione (tasto E) ----------
   _tryInteract() {
     if (this.interactLock > 0) return;
     const px = this.player.position.x, pz = this.player.position.z;
 
+    // Boss vicino: attaccalo
+    if (this.boss && dist2(px, pz, this.boss.position.x, this.boss.position.z) < 9) {
+      this._attackBoss();
+      this.interactLock = 0.35;
+      return;
+    }
     // Alter ego
     if (this.alter && dist2(px, pz, this.alter.position.x, this.alter.position.z) < 6) {
       this._confrontAlter();
@@ -392,6 +410,32 @@ export class Game {
     this.cb.onStateChange(this.state);
   }
 
+  // ---------- Boss finale ----------
+  _attackBoss() {
+    const defense = ["torch", "silver", "cross", "garlic"].find((t) => this._hasItem(t));
+    if (!defense) {
+      UI.openDialog("Il Guardiano della Luna", "Serve un'arma per colpirlo! Raccogli 🔦 torce, ⚙️ argento, ✝️ croci o 🧄 aglio.", [{ label: "Indietro", cb: UI.closeDialog }]);
+      return;
+    }
+    this._takeItem(defense);
+    this.boss.userData.hp--;
+    if (this.audio) this.audio.banish();
+    // reazione visiva
+    this.boss.position.y = 0.3;
+    UI.setBossHP(Math.max(0, this.boss.userData.hp), this.boss.userData.maxHp);
+    this.cb.onStateChange(this.state);
+    if (this.boss.userData.hp <= 0) {
+      this.worldRoot.remove(this.boss);
+      this.boss = null;
+      UI.setBossHP(null);
+      this._progress(120);
+      if (this.audio) this.audio.seal();
+      UI.openDialog("Il Guardiano è caduto!", "Hai sconfitto il Guardiano della Luna. Ora puoi raggiungere il tuo io imprigionato e usare la pozione magica.", [{ label: "Avanti!", primary: true, cb: UI.closeDialog }]);
+    } else {
+      UI.toast(`⚔️ Guardiano colpito! (${this.boss.userData.hp}/${this.boss.userData.maxHp})`, 1400);
+    }
+  }
+
   _usePortal(p) {
     const info = p.userData;
     // Portale d'invasione (Luna): va chiuso
@@ -439,6 +483,10 @@ export class Game {
 
   _confrontAlter() {
     if (this.state.dim === "moon" && this.alter.userData.evil) {
+      if (this.boss) {
+        UI.openDialog("Il tuo Io (Luna)", "«Il Guardiano mi tiene prigioniero... devi sconfiggerlo prima di potermi raggiungere!»", [{ label: "Lo affronterò", cb: UI.closeDialog }]);
+        return;
+      }
       if (this.state.potionReady) {
         // VITTORIA
         UI.openDialog(this.charConfig.name || "Il tuo Io", "Hai la pozione magica. La versi sul tuo io imprigionato...", [{
@@ -539,6 +587,11 @@ export class Game {
     if (this.keys.has("KeyA") || this.keys.has("ArrowLeft")) mx -= 1;
     if (this.keys.has("KeyD") || this.keys.has("ArrowRight")) mx += 1;
 
+    // joystick touch (se la tastiera non è in uso)
+    if (mx === 0 && mz === 0 && (this.touchMove.x || this.touchMove.z)) {
+      mx = this.touchMove.x; mz = this.touchMove.z;
+    }
+
     let moving = 0;
     if (mx || mz) {
       const len = Math.hypot(mx, mz); mx /= len; mz /= len;
@@ -592,6 +645,21 @@ export class Game {
       }
       m.position.y = Math.abs(Math.sin(this.clock.elapsedTime * 6 + m.position.x)) * 0.15;
       if (d < 1.3) this._damage(1);
+    }
+    // Boss: insegue e colpisce più forte
+    if (this.boss) {
+      const dx = px - this.boss.position.x, dz = pz - this.boss.position.z;
+      const d = Math.hypot(dx, dz);
+      if (d < 30 && d > 0.01) {
+        this.boss.position.x += (dx / d) * this.boss.userData.speed * dt;
+        this.boss.position.z += (dz / d) * this.boss.userData.speed * dt;
+        this.boss.rotation.y = Math.atan2(dx, dz);
+      }
+      this.boss.position.y += (0 - this.boss.position.y) * 0.08; // ritorna a terra dopo un colpo
+      // mostra la barra HP quando sei vicino
+      if (d < 12) UI.setBossHP(this.boss.userData.hp, this.boss.userData.maxHp);
+      else UI.setBossHP(null);
+      if (d < 2.0) this._damage(2);
     }
   }
 

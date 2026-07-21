@@ -27,9 +27,13 @@ In alternativa qualsiasi server statico (`npx serve`, estensione "Live Server" d
 | **WASD / Frecce** | Muoviti nel mondo 3D |
 | **Mouse (trascina)** | Ruota la telecamera |
 | **Shift** | Corri |
-| **E / Spazio** | Interagisci (persone, portali, respingi mostri, il tuo io) |
+| **E / Spazio** | Interagisci (persone, portali, respingi mostri, colpisci il boss, il tuo io) |
 | **Esc** | Pausa |
 | **🔊 (in alto a destra)** | Attiva/disattiva l'audio |
+
+Su **smartphone/tablet** compaiono automaticamente un **joystick** (in basso a
+sinistra) per muoverti e un pulsante **E** per interagire; trascina sul resto
+dello schermo per ruotare la telecamera.
 
 ## ✨ Caratteristiche
 
@@ -60,6 +64,12 @@ In alternativa qualsiasi server statico (`npx serve`, estensione "Live Server" d
 - **Audio e musica procedurali** (Web Audio API, nessun file esterno): colonna
   sonora ambientale diversa per ogni dimensione ed effetti sonori per raccolta,
   portali, colpi, pozione e vittoria. Disattivabile con 🔊.
+- **Boss finale — il Guardiano della Luna**: un mostro gigante che tiene
+  prigioniero il tuo io. Devi sconfiggerlo (barra HP dedicata) prima di poter
+  usare la pozione magica.
+- **Salvataggio automatico** dei progressi nel browser (localStorage): dal
+  titolo puoi premere **↻ CONTINUA** per riprendere da dove avevi lasciato.
+- **Controlli touch** per dispositivi mobili (joystick + pulsante azione).
 - Sistema di **livelli**, salute a cuori, inventario, portali, morte e vittoria.
 
 ## 🏆 Obiettivo
@@ -84,6 +94,8 @@ src/
   ui.js             # HUD, toast, dialoghi
   audio.js          # musica ed effetti sonori procedurali (Web Audio API)
   minimap.js        # radar/minimappa 2D su canvas
+  save.js           # salvataggio progressi (localStorage)
+  touch.js          # controlli touch per mobile (joystick + azione)
 ```
 
 ## 🛠️ Note tecniche
