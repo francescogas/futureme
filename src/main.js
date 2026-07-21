@@ -724,6 +724,7 @@ function init() {
   };
   $("btn-sphere").onclick = () => { if (game) game.toggleSphere(); };
   $("btn-map").onclick = () => { if (game) game.toggleMap(); };
+  $("btn-view").onclick = () => { if (game) game.cycleCamera(); };
   $("btn-map-close").onclick = () => { if (game) game.closeMap(); };
 
   // ---- Emote ----
