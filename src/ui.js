@@ -2,6 +2,7 @@
 //  FUTUREME — helper interfaccia (HUD, toast, dialoghi)
 // ============================================================
 import { ITEMS, DIMENSIONS, POWERUPS } from "./data.js";
+import { t } from "./i18n.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -11,7 +12,7 @@ export function hide(id) { $(id)?.classList.add("hidden"); }
 let toastTimer = null;
 export function toast(msg, ms = 2200) {
   const el = $("toast");
-  el.textContent = msg;
+  el.textContent = t(msg);
   el.classList.remove("hidden");
   el.style.animation = "none"; void el.offsetWidth; el.style.animation = "";
   clearTimeout(toastTimer);
@@ -22,22 +23,22 @@ let hintTimer = null;
 export function hint(msg) {
   const el = $("hud-hint");
   if (!msg) { el.classList.remove("show"); return; }
-  el.textContent = msg;
+  el.textContent = t(msg);
   el.classList.add("show");
   clearTimeout(hintTimer);
   hintTimer = setTimeout(() => el.classList.remove("show"), 1800);
 }
 
 export function setObjective(text) {
-  $("hud-objective").textContent = "Obiettivo: " + text;
+  $("hud-objective").textContent = t("Obiettivo:") + " " + t(text);
 }
 
 let bannerTimer = null;
 export function cityBanner(title, sub, landmark) {
   const el = $("city-banner");
-  $("cb-title").textContent = title;
-  $("cb-sub").textContent = sub || "";
-  $("cb-landmark").textContent = landmark ? "★ " + landmark : "";
+  $("cb-title").textContent = t(title);
+  $("cb-sub").textContent = sub ? t(sub) : "";
+  $("cb-landmark").textContent = landmark ? "★ " + t(landmark) : "";
   el.classList.remove("hidden");
   el.style.animation = "none"; void el.offsetWidth; el.style.animation = "";
   clearTimeout(bannerTimer);
@@ -47,7 +48,7 @@ export function cityBanner(title, sub, landmark) {
 export function setQuest(text) {
   const el = $("hud-quest");
   if (!text) { el.classList.add("hidden"); return; }
-  el.textContent = "🎯 " + text;
+  el.textContent = "🎯 " + t(text);
   el.classList.remove("hidden");
 }
 
@@ -162,7 +163,7 @@ export function setSphere(sphere) {
   const label = $("hs-label");
   el.classList.toggle("off", !sphere.active);
   el.classList.toggle("empty", sphere.energy <= 0);
-  label.textContent = sphere.energy <= 0 ? "SCARICA" : (sphere.active ? "ATTIVA · Q" : "SPENTA · Q");
+  label.textContent = sphere.energy <= 0 ? t("SCARICA") : (sphere.active ? t("ATTIVA") + " · Q" : t("SPENTA") + " · Q");
 }
 
 export function setWeather(emoji, name) {
@@ -223,14 +224,14 @@ export function updateHUD(state) {
 
 // Dialogo con scelte. actions = [{label, cb}]
 export function openDialog(speaker, text, actions) {
-  $("dialog-speaker").textContent = speaker;
-  $("dialog-text").textContent = text;
+  $("dialog-speaker").textContent = t(speaker);
+  $("dialog-text").textContent = t(text);
   const box = $("dialog-actions");
   box.innerHTML = "";
   for (const a of actions) {
     const b = document.createElement("button");
     b.className = a.primary ? "big-btn" : "ghost-btn";
-    b.textContent = a.label;
+    b.textContent = t(a.label);
     b.onclick = () => { a.cb?.(); };
     box.appendChild(b);
   }
