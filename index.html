@@ -25,6 +25,11 @@
       <div class="hud-panel">
         <div class="hud-dim"><span id="hud-dim-icon">🌍</span> <span id="hud-dim-name">TERRA</span></div>
         <div class="hud-city"><span id="hud-city">Roma</span> <span id="hud-weather" title="Meteo"></span></div>
+        <div class="hud-profile">
+          <span class="hud-coins">🪙 <b id="hud-coins">0</b></span>
+          <span class="hud-rank">⭐ <b id="hud-rank">1</b></span>
+        </div>
+        <div class="xpbar"><div id="xpbar-fill"></div></div>
       </div>
       <div class="hud-panel hud-center">
         <div class="hud-stat"><span class="lbl">SFIDE RIMANENTI</span><span class="val" id="hud-challenges">1000</span></div>
@@ -47,6 +52,9 @@
     <div class="hud-quest hidden" id="hud-quest"></div>
 
     <div class="hud-hint" id="hud-hint"></div>
+    <div class="hud-combo" id="hud-combo"></div>
+    <div class="coin-popups" id="coin-popups"></div>
+    <div class="ach-toast hidden" id="ach-toast"></div>
 
     <button id="btn-pause" class="corner-btn" title="Pausa">⏸</button>
     <button id="btn-mute" class="corner-btn" title="Audio on/off" style="right:66px;">🔊</button>
@@ -84,15 +92,51 @@
 
   <!-- ===================== TITOLO ===================== -->
   <div id="screen-title" class="overlay">
+    <div class="title-profilebar">
+      <span class="tp-item">🪙 <b id="tp-coins">0</b></span>
+      <span class="tp-item">⭐ Grado <b id="tp-rank">1</b></span>
+      <span class="tp-item">🏆 <b id="tp-ach">0</b>/<span id="tp-ach-total">10</span></span>
+    </div>
     <div class="title-wrap">
       <h1 class="game-logo">FUTURE<span>ME</span></h1>
       <p class="tagline">Le Tre Dimensioni · Terra · Luna · Sole</p>
       <p class="subtitle">Trova il tuo io negli altri mondi. Salva la realtà dall'implosione.</p>
       <button id="btn-continue" class="big-btn hidden">↻ CONTINUA</button>
       <button id="btn-start" class="big-btn">▶ INIZIA L'AVVENTURA</button>
-      <button id="btn-howto" class="ghost-btn">Come si gioca</button>
-      <button id="btn-story" class="ghost-btn">La storia</button>
+      <div class="title-row">
+        <button id="btn-shop" class="ghost-btn">🛒 Negozio</button>
+        <button id="btn-achievements" class="ghost-btn">🏆 Obiettivi</button>
+        <button id="btn-howto" class="ghost-btn">Come si gioca</button>
+        <button id="btn-story" class="ghost-btn">La storia</button>
+      </div>
+      <div id="best-stats" class="best-stats"></div>
       <div class="credits">Un prototipo giocabile — muoviti con <b>WASD</b> / frecce · <b>Mouse</b> per guardare</div>
+    </div>
+  </div>
+
+  <!-- ===================== NEGOZIO ===================== -->
+  <div id="screen-shop" class="overlay hidden">
+    <div class="panel wide">
+      <div class="shop-head">
+        <h2>🛒 Negozio</h2>
+        <span class="shop-coins">🪙 <b id="shop-coins">0</b></span>
+      </div>
+      <p class="muted">Guadagna monete giocando e sblocca stili e scie luminose.</p>
+      <h3 class="shop-sec">Stili di abiti</h3>
+      <div class="shop-grid" id="shop-outfits"></div>
+      <h3 class="shop-sec">Scie luminose</h3>
+      <div class="shop-grid" id="shop-trails"></div>
+      <button id="btn-shop-back" class="big-btn">Indietro</button>
+    </div>
+  </div>
+
+  <!-- ===================== OBIETTIVI ===================== -->
+  <div id="screen-achievements" class="overlay hidden">
+    <div class="panel wide">
+      <h2>🏆 Obiettivi</h2>
+      <p class="muted">Sblocca ricompense e mostra le tue imprese.</p>
+      <div class="ach-grid" id="ach-grid"></div>
+      <button id="btn-ach-back" class="big-btn">Indietro</button>
     </div>
   </div>
 
@@ -194,7 +238,11 @@
     <div class="panel center">
       <h2 class="glow">HAI SALVATO I MONDI</h2>
       <p id="victory-text"></p>
-      <button id="btn-restart" class="big-btn">Gioca ancora</button>
+      <canvas id="share-card" width="600" height="315" class="share-card"></canvas>
+      <div class="victory-row">
+        <button id="btn-share" class="big-btn">📸 Scarica la card</button>
+        <button id="btn-restart" class="ghost-btn">Gioca ancora</button>
+      </div>
     </div>
   </div>
 

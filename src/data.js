@@ -93,6 +93,47 @@ export const ITEMS = {
 // Ingredienti richiesti per la pozione magica (raccolti nel Sole)
 export const POTION_RECIPE = ["herb", "crystal", "sunfruit"];
 
+// ---------- Economia / meta-gioco ----------
+// Outfit gratuiti dall'inizio; gli altri si sbloccano nel Negozio con le monete.
+export const FREE_OUTFITS = ["classic", "summer"];
+export const OUTFIT_PRICES = { pop: 150, rock: 200, seventies: 200, punk: 250, future: 400 };
+
+// Scie luminose (cosmetico) acquistabili
+export const TRAILS = [
+  { id: "none",    label: "Nessuna",    price: 0,   color: null },
+  { id: "cyan",    label: "Scia Ciano", price: 150, color: 0x4df3ff },
+  { id: "magenta", label: "Scia Viola", price: 150, color: 0xb96bff },
+  { id: "gold",    label: "Scia Oro",   price: 250, color: 0xffd35c },
+  { id: "fire",    label: "Scia Fuoco", price: 400, color: 0xff5a3c },
+  { id: "rainbow", label: "Arcobaleno", price: 600, color: 0xffffff, rainbow: true },
+];
+
+// Ricompense in monete/XP per evento
+export const REWARDS = {
+  pickup:   { coins: 5,   xp: 8 },
+  banish:   { coins: 12,  xp: 15 },
+  seal:     { coins: 20,  xp: 25 },
+  quest:    { coins: 40,  xp: 50 },
+  bossHit:  { coins: 10,  xp: 12 },
+  bossKill: { coins: 200, xp: 250 },
+  victory:  { coins: 500, xp: 1000 },
+  city:     { coins: 15,  xp: 20 },
+};
+
+// Obiettivi/achievement (id, nome, descrizione, icona, soglia opzionale)
+export const ACHIEVEMENTS = [
+  { id: "first_key",   name: "Prima Chiave",         desc: "Raccogli la tua prima chiave",       icon: "🔑" },
+  { id: "collector",   name: "Collezionista",        desc: "Raccogli 25 oggetti in totale",      icon: "📦", stat: "totalItems", goal: 25 },
+  { id: "globetrotter",name: "Giramondo",            desc: "Visita tutte e 6 le città",          icon: "🌍", stat: "citiesCount", goal: 6 },
+  { id: "hunter",      name: "Cacciatore di Mostri", desc: "Respingi 25 mostri",                 icon: "⚔️", stat: "monstersBanished", goal: 25 },
+  { id: "boss_slayer", name: "Ammazza-Guardiano",    desc: "Sconfiggi il Guardiano della Luna",  icon: "👹" },
+  { id: "savior",      name: "Salvatore dei Mondi",  desc: "Completa il gioco",                  icon: "🏆" },
+  { id: "storm",       name: "Nella Tempesta",       desc: "Gioca durante una tempesta di sabbia", icon: "🌪️" },
+  { id: "combo5",      name: "Scatenato",            desc: "Raggiungi una combo x5",             icon: "🔥" },
+  { id: "rich",        name: "Riccone",              desc: "Accumula 1000 monete",               icon: "💰", stat: "coins", goal: 1000 },
+  { id: "fashion",     name: "Fashionista",          desc: "Sblocca 3 cosmetici nel Negozio",    icon: "✨", stat: "unlocksCount", goal: 3 },
+];
+
 // NPC a tema per ogni città reale: nome dell'abitante + battute locali
 export const CITY_NPCS = {
   roma: {

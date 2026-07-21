@@ -75,6 +75,49 @@ export function flashDamage() {
   dmgTimer = setTimeout(() => el.classList.remove("flash"), 460);
 }
 
+// ---------- Meta-gioco: monete, grado, combo, achievement ----------
+export function setCoins(n) { const el = $("hud-coins"); if (el) el.textContent = n; }
+export function setLevel(lvl, frac) {
+  const r = $("hud-rank"); if (r) r.textContent = lvl;
+  const f = $("xpbar-fill"); if (f) f.style.width = `${Math.round((frac || 0) * 100)}%`;
+}
+
+let comboTimer = null;
+export function showCombo(n) {
+  const el = $("hud-combo");
+  if (!el) return;
+  el.innerHTML = `COMBO <span class="x">x${n}</span>`;
+  el.classList.remove("show"); void el.offsetWidth; el.classList.add("show");
+  el.style.opacity = 1;
+}
+export function hideCombo() { const el = $("hud-combo"); if (el) { el.classList.remove("show"); el.style.opacity = 0; } }
+
+export function coinPopup(n) {
+  const box = $("coin-popups");
+  if (!box || n <= 0) return;
+  const el = document.createElement("div");
+  el.className = "coin-pop";
+  el.textContent = `+${n} 🪙`;
+  el.style.left = (Math.random() * 60 - 30) + "px";
+  box.appendChild(el);
+  setTimeout(() => el.remove(), 1000);
+}
+
+export function levelUp(lvl) {
+  toast(`⭐ GRADO ${lvl}! Nuovo livello raggiunto!`, 2600);
+}
+
+let achTimer = null;
+export function achievementToast(a) {
+  const el = $("ach-toast");
+  if (!el) return;
+  el.innerHTML = `<div class="ach-icon">${a.icon}</div><div><div class="ach-tag">OBIETTIVO SBLOCCATO</div><div class="ach-name">${a.name}</div><div class="ach-desc">${a.desc}</div></div>`;
+  el.classList.remove("hidden");
+  el.style.animation = "none"; void el.offsetWidth; el.style.animation = "";
+  clearTimeout(achTimer);
+  achTimer = setTimeout(() => el.classList.add("hidden"), 3600);
+}
+
 export function setWeather(emoji, name) {
   const el = $("hud-weather");
   if (!el) return;

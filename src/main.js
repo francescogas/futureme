@@ -4,9 +4,10 @@
 import * as THREE from "three";
 import { Game } from "./game.js";
 import { buildAvatar, animateAvatar } from "./character.js";
-import { SPECIES, SEXES, OUTFITS, SKIN_COLORS, DIMENSIONS } from "./data.js";
+import { SPECIES, SEXES, OUTFITS, SKIN_COLORS, DIMENSIONS, TRAILS, OUTFIT_PRICES, ACHIEVEMENTS, FREE_OUTFITS } from "./data.js";
 import { AudioManager } from "./audio.js";
 import { Save } from "./save.js";
+import { Profile } from "./progression.js";
 import { setupTouch, isTouchDevice } from "./touch.js";
 import * as UI from "./ui.js";
 
@@ -165,11 +166,44 @@ function setupCreatorControls() {
     (id) => (charConfig.species = id), (s) => `<span class="em">${s.emoji}</span>${s.label}`);
   buildChips("ctl-sex", SEXES, () => charConfig.sex,
     (id) => (charConfig.sex = id), (s) => `<span class="em">${s.emoji}</span>${s.label}`);
-  buildChips("ctl-outfit", OUTFITS, () => charConfig.outfit,
-    (id) => (charConfig.outfit = id), (o) => `<span class="em">${o.emoji}</span>${o.label}`);
+  buildOutfitChips();
   buildColorChips();
   $("ctl-name").value = charConfig.name;
   $("ctl-name").oninput = (e) => (charConfig.name = e.target.value);
+}
+
+// Stili con lucchetto: quelli non posseduti mostrano il prezzo e si acquistano al volo
+function buildOutfitChips() {
+  const c = $("ctl-outfit");
+  c.innerHTML = "";
+  // se lo stile equipaggiato è bloccato, ripiega su uno gratuito
+  if (!Profile.hasOutfit(charConfig.outfit)) charConfig.outfit = FREE_OUTFITS[0];
+  for (const o of OUTFITS) {
+    const owned = Profile.hasOutfit(o.id);
+    const chip = document.createElement("div");
+    chip.className = "chip" + (o.id === charConfig.outfit ? " active" : "") + (owned ? "" : " locked");
+    chip.innerHTML = owned
+      ? `<span class="em">${o.emoji}</span>${o.label}`
+      : `<span class="em">${o.emoji}</span>${o.label} 🔒 ${OUTFIT_PRICES[o.id] || 0}`;
+    chip.onclick = () => {
+      if (!Profile.hasOutfit(o.id)) {
+        const price = OUTFIT_PRICES[o.id] || 0;
+        if (Profile.coins >= price) {
+          UI.openDialog("Sblocca stile", `Vuoi sbloccare "${o.label}" per ${price} 🪙 monete?`, [
+            { label: "Sblocca", primary: true, cb: () => { UI.closeDialog(); Profile.buyOutfit(o.id); charConfig.outfit = o.id; Profile.checkAchievements(); buildOutfitChips(); preview.rebuild(); UI.toast("Stile sbloccato!"); } },
+            { label: "Annulla", cb: () => UI.closeDialog() },
+          ]);
+        } else {
+          UI.toast(`Ti servono ${price} 🪙 — guadagna monete giocando!`, 2600);
+        }
+        return;
+      }
+      charConfig.outfit = o.id;
+      buildOutfitChips();
+      preview.rebuild();
+    };
+    c.appendChild(chip);
+  }
 }
 
 // ============================================================
@@ -191,7 +225,7 @@ function buildDimensionCards() {
 // ============================================================
 //  Gestione schermate
 // ============================================================
-const SCREENS = ["screen-title", "screen-intro", "screen-howto", "screen-creator", "screen-dimension", "screen-death", "screen-victory", "screen-pause"];
+const SCREENS = ["screen-title", "screen-intro", "screen-howto", "screen-creator", "screen-dimension", "screen-death", "screen-victory", "screen-pause", "screen-shop", "screen-achievements"];
 function showScreen(id) {
   SCREENS.forEach((s) => UI.hide(s));
   if (id) UI.show(id);
@@ -266,8 +300,9 @@ function onVictory(state) {
   const name = charConfig.name || "Eroe";
   $("victory-text").innerHTML =
     `${name}, hai liberato il tuo io imprigionato sulla Luna e lo hai portato nella luce del Sole.<br><br>` +
-    `I portali sono sigillati, l'implosione dei mondi è scongiurata.<br><br>` +
-    `Morti: <b>${state.deaths}</b> · Portali sigillati: <b>${state.portalsClosed}</b> · Sfide rimaste: <b>${state.challenges}</b>`;
+    `I portali sono sigillati, l'implosione dei mondi è scongiurata.`;
+  drawShareCard(state);
+  refreshTitleBar();
   showScreen("screen-victory");
 }
 
@@ -275,6 +310,142 @@ function onVictory(state) {
 //  Wiring pulsanti
 // ============================================================
 let preview;
+
+// ---------- Barra profilo (titolo) ----------
+function refreshTitleBar() {
+  $("tp-coins").textContent = Profile.coins;
+  $("tp-rank").textContent = Profile.level;
+  $("tp-ach").textContent = Profile.achievementsUnlockedCount();
+  $("tp-ach-total").textContent = ACHIEVEMENTS.length;
+  const b = Profile.profile.best;
+  const parts = [];
+  if (b.mostChallengesCleared > 0) parts.push(`Sfide completate (record): <b>${b.mostChallengesCleared}</b>`);
+  if (b.fewestDeaths != null) parts.push(`Morti minime: <b>${b.fewestDeaths}</b>`);
+  if (b.bestCombo > 0) parts.push(`Combo record: <b>x${b.bestCombo}</b>`);
+  if (Profile.profile.victories > 0) parts.push(`Vittorie: <b>${Profile.profile.victories}</b>`);
+  $("best-stats").innerHTML = parts.length ? "🏅 " + parts.join(" · ") : "";
+}
+
+// ---------- Negozio ----------
+function buildShop() {
+  $("shop-coins").textContent = Profile.coins;
+  // Stili
+  const og = $("shop-outfits");
+  og.innerHTML = "";
+  for (const o of OUTFITS) {
+    const owned = Profile.hasOutfit(o.id);
+    const price = OUTFIT_PRICES[o.id] || 0;
+    const card = document.createElement("div");
+    card.className = "shop-item";
+    let btn;
+    if (owned) btn = `<button class="owned">Sbloccato ✓</button>`;
+    else if (Profile.coins >= price) btn = `<button data-buy-outfit="${o.id}">🪙 ${price}</button>`;
+    else btn = `<button class="cant">🪙 ${price}</button>`;
+    card.innerHTML = `<div class="si-emoji">${o.emoji}</div><div class="si-name">${o.label}</div>${btn}`;
+    og.appendChild(card);
+  }
+  // Scie
+  const tg = $("shop-trails");
+  tg.innerHTML = "";
+  for (const t of TRAILS) {
+    const owned = Profile.hasTrail(t.id);
+    const equipped = Profile.profile.equippedTrail === t.id;
+    const card = document.createElement("div");
+    card.className = "shop-item";
+    const swatch = t.color != null
+      ? `<div class="si-swatch" style="background:${t.rainbow ? "linear-gradient(90deg,#ff4d4d,#ffd35c,#4dd39a,#4df3ff,#b96bff)" : "#" + t.color.toString(16).padStart(6, "0")}"></div>`
+      : `<div class="si-swatch" style="background:transparent;border:1px dashed #556"></div>`;
+    let btn;
+    if (equipped) btn = `<button class="equipped">Equipaggiata ✓</button>`;
+    else if (owned) btn = `<button data-equip-trail="${t.id}">Equipaggia</button>`;
+    else if (Profile.coins >= t.price) btn = `<button data-buy-trail="${t.id}">🪙 ${t.price}</button>`;
+    else btn = `<button class="cant">🪙 ${t.price}</button>`;
+    card.innerHTML = `<div class="si-name">${t.label}</div>${swatch}${btn}`;
+    tg.appendChild(card);
+  }
+  // click handlers (delegati)
+  og.querySelectorAll("[data-buy-outfit]").forEach((b) => b.onclick = () => {
+    if (Profile.buyOutfit(b.dataset.buyOutfit)) { UI.toast("Stile sbloccato!"); afterPurchase(); }
+  });
+  tg.querySelectorAll("[data-buy-trail]").forEach((b) => b.onclick = () => {
+    if (Profile.buyTrail(b.dataset.buyTrail)) { Profile.equipTrail(b.dataset.buyTrail); UI.toast("Scia sbloccata ed equipaggiata!"); afterPurchase(); }
+  });
+  tg.querySelectorAll("[data-equip-trail]").forEach((b) => b.onclick = () => {
+    Profile.equipTrail(b.dataset.equipTrail); afterPurchase();
+  });
+}
+function afterPurchase() {
+  Profile.checkAchievements();
+  buildShop(); refreshTitleBar();
+  setupCreatorControls(); // aggiorna eventuali lucchetti
+}
+
+// ---------- Obiettivi ----------
+function buildAchievements() {
+  const grid = $("ach-grid");
+  grid.innerHTML = "";
+  for (const a of ACHIEVEMENTS) {
+    const unlocked = Profile.hasAchievement(a.id);
+    const card = document.createElement("div");
+    card.className = "ach-card " + (unlocked ? "unlocked" : "locked");
+    card.innerHTML = `<div class="ac-icon">${unlocked ? a.icon : "🔒"}</div><div><div class="ac-name">${a.name}</div><div class="ac-desc">${a.desc}</div></div>`;
+    grid.appendChild(card);
+  }
+}
+
+// ---------- Ricompensa giornaliera ----------
+function maybeDailyReward() {
+  if (!Profile.dailyAvailable()) return;
+  const r = Profile.claimDaily();
+  if (!r) return;
+  refreshTitleBar();
+  UI.openDialog("🎁 Ricompensa giornaliera",
+    `Bentornato! Hai ricevuto ${r.coins} 🪙 monete.\nSerie di accessi: ${r.streak} ${r.streak > 1 ? "giorni" : "giorno"} di fila. Torna domani per una ricompensa più grande!`,
+    [{ label: "Grazie!", primary: true, cb: () => UI.closeDialog() }]);
+}
+
+// ---------- Card condivisibile (vittoria) ----------
+function drawShareCard(state) {
+  const c = $("share-card"); if (!c) return;
+  const ctx = c.getContext("2d");
+  const W = c.width, H = c.height;
+  const g = ctx.createLinearGradient(0, 0, W, H);
+  g.addColorStop(0, "#0a0f2a"); g.addColorStop(0.5, "#241046"); g.addColorStop(1, "#3a1030");
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+  // stelle
+  ctx.fillStyle = "rgba(255,255,255,0.7)";
+  for (let i = 0; i < 60; i++) { ctx.globalAlpha = Math.random(); ctx.fillRect(Math.random() * W, Math.random() * H * 0.7, 2, 2); }
+  ctx.globalAlpha = 1;
+  ctx.textAlign = "center";
+  ctx.fillStyle = "#4df3ff"; ctx.font = "bold 20px 'Trebuchet MS', sans-serif";
+  ctx.fillText("FUTUREME — Le Tre Dimensioni", W / 2, 44);
+  ctx.fillStyle = "#ffd35c"; ctx.font = "900 40px 'Trebuchet MS', sans-serif";
+  ctx.fillText("HO SALVATO I MONDI", W / 2, 100);
+  ctx.fillStyle = "#eaf2ff"; ctx.font = "18px 'Trebuchet MS', sans-serif";
+  const name = charConfig.name || "Un eroe";
+  ctx.fillText(`${name} · Grado ${Profile.level}`, W / 2, 138);
+  ctx.font = "22px 'Trebuchet MS', sans-serif"; ctx.fillStyle = "#cfe0ff";
+  const stats = [
+    `💀 Morti: ${state.deaths}`,
+    `🔒 Portali sigillati: ${state.portalsClosed}`,
+    `👹 Guardiani sconfitti: ${Profile.profile.bossDefeats}`,
+    `🪙 Monete: ${Profile.coins}`,
+  ];
+  stats.forEach((s, i) => ctx.fillText(s, W / 2, 186 + i * 30));
+  ctx.fillStyle = "#8ea2d6"; ctx.font = "14px 'Trebuchet MS', sans-serif";
+  ctx.fillText("Riesci a fare di meglio? #FUTUREME", W / 2, H - 18);
+}
+
+function downloadShareCard() {
+  const c = $("share-card"); if (!c) return;
+  try {
+    const url = c.toDataURL("image/png");
+    const a = document.createElement("a");
+    a.href = url; a.download = "futureme-vittoria.png";
+    document.body.appendChild(a); a.click(); a.remove();
+    UI.toast("Card salvata! Condividila con #FUTUREME");
+  } catch (e) { UI.toast("Impossibile salvare la card qui."); }
+}
 
 function refreshContinueButton() {
   const btn = $("btn-continue");
@@ -333,8 +504,16 @@ function init() {
     $("btn-mute").textContent = muted ? "🔇" : "🔊";
   };
 
+  $("btn-shop").onclick = () => { buildShop(); showScreen("screen-shop"); };
+  $("btn-shop-back").onclick = () => { showScreen("screen-title"); refreshTitleBar(); };
+  $("btn-achievements").onclick = () => { buildAchievements(); showScreen("screen-achievements"); };
+  $("btn-ach-back").onclick = () => showScreen("screen-title");
+  $("btn-share").onclick = () => downloadShareCard();
+
   // mostra "Continua" se esiste un salvataggio
   refreshContinueButton();
+  refreshTitleBar();
+  maybeDailyReward();
   $("btn-howto").onclick = () => showScreen("screen-howto");
   $("btn-howto-back").onclick = () => showScreen("screen-title");
   $("btn-creator-back").onclick = () => showScreen("screen-title");
@@ -346,7 +525,7 @@ function init() {
 
   $("btn-pause").onclick = () => { game.pause(); UI.hide("hud"); showScreen("screen-pause"); };
   $("btn-resume").onclick = () => { showScreen(null); UI.show("hud"); audio.resume(); game.resume(); };
-  $("btn-quit").onclick = () => { game.pause(); UI.hide("hud"); refreshContinueButton(); showScreen("screen-title"); };
+  $("btn-quit").onclick = () => { game.pause(); UI.hide("hud"); refreshContinueButton(); refreshTitleBar(); showScreen("screen-title"); };
 
   // Esc = pausa
   window.addEventListener("keydown", (e) => {

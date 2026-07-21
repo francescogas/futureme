@@ -153,6 +153,8 @@ h2 { margin-bottom: 14px; font-size: 26px; }
 }
 .chip:hover { background: rgba(120,160,255,0.18); }
 .chip.active { border-color: var(--neon); background: rgba(77,243,255,0.16); color: #fff; box-shadow: 0 0 16px rgba(77,243,255,0.35); }
+.chip.locked { opacity: 0.62; }
+.chip.locked:hover { opacity: 0.85; }
 .chip .em { margin-right: 6px; }
 .color-chip { width: 34px; height: 34px; border-radius: 50%; padding: 0; }
 .color-chip.active { transform: scale(1.15); box-shadow: 0 0 0 3px var(--bg), 0 0 0 5px var(--neon); }
@@ -163,6 +165,52 @@ h2 { margin-bottom: 14px; font-size: 26px; }
   font-family: var(--font);
 }
 .text-input:focus { outline: none; border-color: var(--neon); }
+
+/* ---------- Barra profilo titolo ---------- */
+.title-profilebar {
+  position: absolute; top: 16px; left: 50%; transform: translateX(-50%);
+  display: flex; gap: 18px; background: var(--panel); border: 1px solid var(--panel-border);
+  border-radius: 30px; padding: 8px 22px; font-size: 15px;
+}
+.tp-item b { color: var(--gold); }
+.title-row { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 6px; }
+.best-stats { margin-top: 16px; font-size: 13px; color: #9fb0d6; }
+
+/* ---------- Negozio ---------- */
+.shop-head { display: flex; align-items: center; justify-content: space-between; }
+.shop-coins { font-size: 18px; } .shop-coins b { color: var(--gold); }
+.shop-sec { margin: 16px 0 10px; font-size: 15px; color: var(--neon); letter-spacing: 1px; }
+.shop-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
+.shop-item {
+  background: rgba(10,14,30,0.7); border: 1px solid var(--panel-border); border-radius: 14px;
+  padding: 12px; text-align: center; transition: transform .12s;
+}
+.shop-item:hover { transform: translateY(-2px); }
+.shop-item .si-emoji { font-size: 28px; }
+.shop-item .si-name { font-size: 13px; margin: 4px 0; }
+.shop-item .si-swatch { width: 100%; height: 22px; border-radius: 8px; margin: 6px 0; }
+.shop-item button {
+  width: 100%; padding: 7px; border-radius: 20px; border: none; cursor: pointer; font-weight: 700; font-size: 13px;
+  background: linear-gradient(90deg, var(--neon), var(--neon2)); color: #041018;
+}
+.shop-item button.owned { background: rgba(120,160,255,0.15); color: #9fb0d6; cursor: default; }
+.shop-item button.equipped { background: var(--gold); color: #2a1a00; }
+.shop-item button.cant { background: rgba(120,60,60,0.3); color: #ffb0b0; cursor: not-allowed; }
+
+/* ---------- Obiettivi ---------- */
+.ach-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; margin: 14px 0 20px; }
+.ach-card {
+  display: flex; gap: 12px; align-items: center; padding: 12px; border-radius: 14px;
+  background: rgba(10,14,30,0.7); border: 1px solid var(--panel-border);
+}
+.ach-card.locked { opacity: 0.45; filter: grayscale(0.6); }
+.ach-card .ac-icon { font-size: 30px; }
+.ach-card .ac-name { font-weight: 800; font-size: 14px; }
+.ach-card.unlocked .ac-name { color: var(--gold); }
+.ach-card .ac-desc { font-size: 12px; color: #a9b8dd; }
+
+.share-card { width: 100%; max-width: 480px; border-radius: 14px; margin: 14px 0; border: 1px solid var(--panel-border); }
+.victory-row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
 
 /* ---------- Dimension cards ---------- */
 .dim-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin: 20px 0; }
@@ -207,6 +255,42 @@ h2 { margin-bottom: 14px; font-size: 26px; }
 .hud-stat .val { font-size: 24px; font-weight: 800; color: var(--gold); }
 .hud-stat.small .val { font-size: 17px; color: #eaf2ff; }
 .hud-hearts { font-size: 20px; letter-spacing: 2px; margin-bottom: 4px; }
+
+.hud-profile { display: flex; gap: 12px; margin-top: 6px; font-size: 14px; }
+.hud-coins b { color: var(--gold); }
+.hud-rank b { color: var(--neon); }
+.xpbar { height: 5px; border-radius: 4px; background: rgba(120,160,255,0.15); margin-top: 5px; overflow: hidden; }
+#xpbar-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--neon), var(--neon2)); transition: width .4s; }
+
+.hud-combo {
+  position: absolute; top: 44%; right: 6%; transform: translateY(-50%);
+  font-size: clamp(24px, 5vw, 46px); font-weight: 900; font-style: italic;
+  color: #fff; text-shadow: 0 0 24px var(--gold), 0 2px 6px rgba(0,0,0,0.6);
+  opacity: 0; pointer-events: none;
+}
+.hud-combo.show { animation: comboPop 0.5s ease; }
+.hud-combo .x { color: var(--gold); }
+@keyframes comboPop { 0% { opacity: 0; transform: translateY(-50%) scale(0.4) rotate(-8deg);} 40% { opacity: 1; transform: translateY(-50%) scale(1.15) rotate(-4deg);} 100% { opacity: 1; transform: translateY(-50%) scale(1) rotate(-4deg);} }
+
+.coin-popups { position: absolute; top: 40%; left: 50%; }
+.coin-pop {
+  position: absolute; transform: translateX(-50%); font-weight: 800; color: var(--gold);
+  font-size: 18px; text-shadow: 0 2px 6px rgba(0,0,0,0.6); animation: coinRise 1s ease forwards; white-space: nowrap;
+}
+@keyframes coinRise { 0% { opacity: 0; transform: translate(-50%, 10px);} 20% { opacity: 1;} 100% { opacity: 0; transform: translate(-50%, -60px);} }
+
+.ach-toast {
+  position: absolute; top: 150px; left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 12px; z-index: 12;
+  background: linear-gradient(90deg, rgba(40,30,10,0.95), rgba(20,16,34,0.95));
+  border: 1px solid var(--gold); border-radius: 16px; padding: 12px 20px;
+  box-shadow: 0 6px 30px rgba(255,211,92,0.4); animation: achIn 0.5s ease;
+}
+.ach-toast .ach-icon { font-size: 32px; }
+.ach-toast .ach-name { font-weight: 800; color: var(--gold); }
+.ach-toast .ach-desc { font-size: 13px; color: #cbd7f5; }
+.ach-toast .ach-tag { font-size: 10px; letter-spacing: 2px; color: #8ea2d6; }
+@keyframes achIn { from { opacity: 0; transform: translateX(-50%) translateY(-14px);} to { opacity: 1;} }
 
 .hud-inventory {
   position: absolute; bottom: 14px; left: 50%; transform: translateX(-50%);
@@ -308,6 +392,7 @@ h2 { margin-bottom: 14px; font-size: 26px; }
 }
 
 /* ---------- Dialog ---------- */
+#dialog { z-index: 40; }
 .dialog-box {
   background: var(--panel); border: 1px solid var(--panel-border);
   border-radius: 18px; padding: 22px 26px; max-width: 560px; width: 100%;

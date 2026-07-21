@@ -35,6 +35,33 @@ Su **smartphone/tablet** compaiono automaticamente un **joystick** (in basso a
 sinistra) per muoverti e un pulsante **E** per interagire; trascina sul resto
 dello schermo per ruotare la telecamera.
 
+## 🎮 Meta-gioco e coinvolgimento (stile giochi popolari)
+
+- **Monete & Gradi (XP)**: guadagni monete e punti esperienza raccogliendo
+  oggetti, respingendo mostri, sigillando portali, completando missioni e
+  sconfiggendo il boss. Sali di **Grado** con una barra XP sempre visibile.
+- **Sistema Combo**: incatena raccolte e nemici per far salire il moltiplicatore
+  (**COMBO x2, x3...**) che aumenta le monete guadagnate.
+- **Negozio di cosmetici**: sblocca **stili di abiti** e **scie luminose**
+  (compresa una scia arcobaleno animata) con le monete guadagnate giocando.
+- **Obiettivi/Achievement**: 10 traguardi da sbloccare, con notifica animata.
+- **Ricompensa giornaliera** con **serie di accessi** (streak) che cresce ogni
+  giorno — il classico hook di ritorno.
+- **Record personali** e statistiche mostrati sul titolo (morti minime, sfide
+  completate, combo record, vittorie).
+- **Card di vittoria condivisibile**: a fine partita generi un'immagine con le
+  tue statistiche da scaricare e condividere (#FUTUREME) — per creare community.
+
+> ### 💰 Nota sulla monetizzazione
+> Il gioco implementa l'intera **economia virtuale guadagnabile giocando** (monete,
+> cosmetici, progressione) — la base corretta e non predatoria su cui si innesta la
+> monetizzazione. **Non** è incluso alcun incasso reale né finti pagamenti: una
+> monetizzazione vera richiede l'integrazione di uno store/IAP (App Store, Google
+> Play, Steam) o pubblicità con relativa compliance (privacy, età, trasparenza).
+> Il design segue le buone pratiche: **solo cosmetici, nessun pay-to-win**, nessun
+> meccanismo manipolatorio. Le monete premium andrebbero aggiunte come acquisto
+> *facoltativo* accanto a quelle guadagnabili, mai come unica via.
+
 ## ✨ Caratteristiche
 
 - **Intro cinematografica**: alla prima partita una sequenza narrativa (con
@@ -128,6 +155,7 @@ src/
   save.js           # salvataggio progressi (localStorage)
   touch.js          # controlli touch per mobile (joystick + azione)
   weather.js        # meteo dinamico (pioggia, neve, nebbia, sabbia, nuvole)
+  progression.js    # profilo persistente: monete, XP, gradi, sblocchi, achievement, daily
 ```
 
 ## 🛠️ Note tecniche

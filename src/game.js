@@ -7,9 +7,10 @@ import {
   buildDimension, makeItem, makePortal, makeNPC, makeMonster,
   makeAlterEgo, makeBoss, animateWorldObjects,
 } from "./world.js";
-import { DIMENSIONS, POTION_RECIPE, NPC_LINES, CITY_NPCS, ITEMS } from "./data.js";
+import { DIMENSIONS, POTION_RECIPE, NPC_LINES, CITY_NPCS, ITEMS, REWARDS } from "./data.js";
 import { Minimap } from "./minimap.js";
 import { Weather } from "./weather.js";
+import { Profile } from "./progression.js";
 import * as UI from "./ui.js";
 
 const rand = (a, b) => a + Math.random() * (b - a);
@@ -32,6 +33,9 @@ export class Game {
     this.touchMove = { x: 0, z: 0 };
     this.shake = 0;
     this.bursts = [];
+    this.combo = 0;
+    this.comboTimer = 0;
+    this.trailTimer = 0;
 
     this._initRenderer();
     this._initInput();
@@ -93,6 +97,12 @@ export class Game {
     this.playerParts = built.parts;
     this.avatarTemplate = built.group; // per clonare l'alter ego
 
+    // cosmetici e HUD del profilo
+    this.trailCfg = Profile.equippedTrail();
+    this.combo = 0;
+    UI.setCoins(Profile.coins);
+    UI.setLevel(Profile.level, Profile.levelProgress().frac);
+
     this.loadDimension(this.state.dim, this.state.level);
     this.running = true;
     this.clock.start();
@@ -143,6 +153,15 @@ export class Game {
     this._setObjectiveForDim(dimId);
     if (this.audio) this.audio.setAmbient(dimId);
     this.cb.onStateChange(this.state);
+    // ricompense d'esplorazione + achievement
+    if (dimId === "earth" && this.city) {
+      if (!Profile.profile.citiesVisited.includes(this.city.id)) {
+        Profile.visitCity(this.city.id);
+        this._reward("city");
+      }
+      this._checkAchievements();
+    }
+    if (this.weather && this.weather.type === "sand") this._unlockAch("storm");
     // banner d'arrivo
     if (dimId === "earth" && this.city) {
       UI.cityBanner(this.city.name, "Terra · " + this.city.country, this.city.landmark);
@@ -478,6 +497,7 @@ export class Game {
     if (this._questProgress() >= q.target) {
       this._giveItem(q.reward);
       this._progress(50);
+      this._reward("quest");
       this.state.quest = null;
       UI.setQuest(null);
       if (this.audio) this.audio.seal();
@@ -498,6 +518,9 @@ export class Game {
     this._spawnBurst(m.position.x, 1.2, m.position.z, 0xffe9a0, 18);
     this.worldRoot.remove(m);
     this.state.monstersBanished++;
+    Profile.addBanish(1);
+    this._bumpCombo();
+    this._reward("banish");
     this._progress(15);
     if (this.audio) this.audio.banish();
     UI.toast(`💥 Mostro respinto con ${ITEMS[defense].emoji}!`, 1500);
@@ -517,6 +540,7 @@ export class Game {
     if (this.audio) this.audio.banish();
     this.shake = 0.3;
     this._spawnBurst(this.boss.position.x, 2.2, this.boss.position.z, 0xff3366, 16);
+    this._reward("bossHit");
     // reazione visiva
     this.boss.position.y = 0.3;
     UI.setBossHP(Math.max(0, this.boss.userData.hp), this.boss.userData.maxHp);
@@ -528,7 +552,10 @@ export class Game {
       this.boss = null;
       UI.setBossHP(null);
       this._progress(120);
-      if (this.audio) this.audio.seal();
+      Profile.recordBossDefeat();
+      this._reward("bossKill");
+      this._unlockAch("boss_slayer");
+      if (this.audio) { this.audio.seal(); this.audio.setBossProximity(0); }
       UI.openDialog("Il Guardiano è caduto!", "Hai sconfitto il Guardiano della Luna. Ora puoi raggiungere il tuo io imprigionato e usare la pozione magica.", [{ label: "Avanti!", primary: true, cb: UI.closeDialog }]);
     } else {
       UI.toast(`⚔️ Guardiano colpito! (${this.boss.userData.hp}/${this.boss.userData.maxHp})`, 1400);
@@ -549,6 +576,7 @@ export class Game {
       p.userData.disc.material.opacity = 0.1;
       this.state.portalsClosed++;
       this._progress(30);
+      this._reward("seal");
       if (this.audio) this.audio.seal();
       UI.toast(`🔒 Portale sigillato! (${ITEMS[defense].emoji} usato)`);
       this._checkMoonCleared();
@@ -598,6 +626,10 @@ export class Game {
             // trasforma l'alter ego (rimuove aura malvagia)
             this.alter.traverse((o) => { if (o.isMesh && o.material.emissive) { o.material.emissive.set(0x000000); o.material.emissiveIntensity = 0; } });
             this.alterBeam.material.color.set(0x4df3ff);
+            Profile.recordVictory();
+            Profile.recordRun(this.state.deaths, 1000 - this.state.challenges);
+            this._reward("victory");
+            this._unlockAch("savior");
             this.running = false;
             setTimeout(() => this.cb.onVictory(this.state), 900);
           }
@@ -616,6 +648,37 @@ export class Game {
       UI.toast("🌙 Hai sigillato tutti i portali d'invasione!");
       UI.setObjective("ora libera il tuo io con la pozione, o esci verso il Sole.");
     }
+  }
+
+  // ---------- Combo + ricompense (monete/XP) ----------
+  _bumpCombo() {
+    this.combo++;
+    this.comboTimer = 4.0; // finestra combo
+    if (this.combo >= 2) UI.showCombo(this.combo);
+    Profile.recordBestCombo(this.combo);
+    if (this.combo >= 5) this._unlockAch("combo5");
+  }
+  get comboMul() { return 1 + Math.min(this.combo, 15) * 0.1; }
+
+  _reward(event) {
+    const r = REWARDS[event]; if (!r) return;
+    const coins = Math.round(r.coins * (event === "pickup" || event === "banish" ? this.comboMul : 1));
+    Profile.addCoins(coins);
+    const lv = Profile.addXP(r.xp);
+    UI.setCoins(Profile.coins);
+    UI.setLevel(Profile.level, Profile.levelProgress().frac);
+    UI.coinPopup(coins);
+    if (lv.leveledUp) { UI.levelUp(lv.to); if (this.audio) this.audio.seal(); }
+    this._checkAchievements();
+  }
+
+  _unlockAch(id, flags) {
+    const got = Profile.checkAchievements({ [id]: true, ...(flags || {}) });
+    for (const a of got) UI.achievementToast(a);
+  }
+  _checkAchievements() {
+    const got = Profile.checkAchievements();
+    for (const a of got) UI.achievementToast(a);
   }
 
   // ---------- Progresso sfide ----------
@@ -642,6 +705,8 @@ export class Game {
     if (this.audio) this.audio.death();
     this.state.deaths++;
     this.state.challenges += 100;
+    this.combo = 0; UI.hideCombo();
+    Profile.recordRun(this.state.deaths, Math.max(0, 1000 - this.state.challenges));
     this.cb.onStateChange(this.state);
     this.cb.onDeath(this.state);
   }
@@ -678,6 +743,11 @@ export class Game {
 
     if (this.hitCooldown > 0) this.hitCooldown -= dt;
     if (this.interactLock > 0) this.interactLock -= dt;
+    // decadimento combo
+    if (this.combo > 0) {
+      this.comboTimer -= dt;
+      if (this.comboTimer <= 0) { this.combo = 0; UI.hideCombo(); }
+    }
 
     this.renderer.render(this.scene, this.camera);
   }
@@ -721,6 +791,17 @@ export class Game {
     }
 
     animateAvatar(this.playerParts, t, moving);
+
+    // scia luminosa cosmetica
+    if (this.trailCfg && this.trailCfg.color != null) {
+      this.trailTimer -= dt;
+      if (moving > 0 && this.trailTimer <= 0) {
+        this.trailTimer = 0.05;
+        let c = this.trailCfg.color;
+        if (this.trailCfg.rainbow) c = new THREE.Color().setHSL((t * 0.3) % 1, 1, 0.6).getHex();
+        this._emitTrail(c);
+      }
+    }
 
     // camera in terza persona
     const camDist = 7, camH = 3 + this.pitch * 4;
@@ -798,6 +879,18 @@ export class Game {
     this.bursts.push({ pts, vel, life: 0, max: 0.7 });
   }
 
+  _emitTrail(color) {
+    const geo = new THREE.BufferGeometry();
+    const p = new Float32Array([
+      this.player.position.x + rand(-0.18, 0.18), 0.35, this.player.position.z + rand(-0.18, 0.18),
+    ]);
+    geo.setAttribute("position", new THREE.BufferAttribute(p, 3));
+    const pts = new THREE.Points(geo, new THREE.PointsMaterial({ color, size: 0.45, transparent: true, opacity: 0.85, depthWrite: false }));
+    pts.frustumCulled = false;
+    this.worldRoot.add(pts);
+    this.bursts.push({ pts, vel: [[0, 1.0, 0]], life: 0, max: 0.55 });
+  }
+
   _updateBursts(dt) {
     for (let i = this.bursts.length - 1; i >= 0; i--) {
       const b = this.bursts[i];
@@ -828,6 +921,10 @@ export class Game {
         this.objects.items.splice(i, 1);
         this._progress(10);
         if (this.audio) this.audio.pickup();
+        Profile.addItem(1);
+        this._bumpCombo();
+        this._reward("pickup");
+        if (type === "key") this._unlockAch("first_key");
         UI.toast(`${ITEMS[type].emoji} ${ITEMS[type].label} raccolto!`, 1400);
         this._checkPotion();
         this._checkQuest();
