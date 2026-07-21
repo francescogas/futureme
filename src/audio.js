@@ -82,6 +82,31 @@ export class AudioManager {
     this._ambientPad = pad;
   }
 
+  // ---------- Tensione del boss (battito che accelera) ----------
+  _buildBossLayer() {
+    const ctx = this.ctx;
+    const gain = ctx.createGain(); gain.gain.value = 0; gain.connect(this.master);
+    const pulse = ctx.createGain(); pulse.gain.value = 1; pulse.connect(gain);
+    const filter = ctx.createBiquadFilter(); filter.type = "lowpass"; filter.frequency.value = 240; filter.connect(pulse);
+    const osc = [];
+    for (const f of [55, 58.2]) { const o = ctx.createOscillator(); o.type = "sawtooth"; o.frequency.value = f; o.connect(filter); o.start(); osc.push(o); }
+    // battito cardiaco: LFO che modula il gain di "pulse"
+    const lfo = ctx.createOscillator(); lfo.type = "sine"; lfo.frequency.value = 1.1;
+    const lg = ctx.createGain(); lg.gain.value = 0.6;
+    lfo.connect(lg); lg.connect(pulse.gain); lfo.start();
+    this._bossLayer = { gain, osc, lfo };
+  }
+
+  setBossProximity(v) {
+    if (!this.enabled) return;
+    if (v <= 0 && !this._bossLayer) return;
+    if (!this._bossLayer) this._buildBossLayer();
+    const t = this.ctx.currentTime;
+    this._bossLayer.gain.gain.setTargetAtTime(Math.max(0, Math.min(1, v)) * 0.14, t, 0.2);
+    this._bossLayer.lfo.frequency.setTargetAtTime(1.0 + v * 1.8, t, 0.3); // il battito accelera
+    for (const o of this._bossLayer.osc) o.detune.setTargetAtTime(v * 25, t, 0.3);
+  }
+
   // ---------- Ambiente meteo (rumore filtrato) ----------
   _noiseBuffer() {
     if (this._noise) return this._noise;

@@ -37,6 +37,14 @@ dello schermo per ruotare la telecamera.
 
 ## ✨ Caratteristiche
 
+- **Intro cinematografica**: alla prima partita una sequenza narrativa (con
+  sfondo stellato animato) racconta la storia dei tre mondi; è rivedibile dal
+  titolo con **La storia** e saltabile in qualsiasi momento.
+- **Ciclo giorno/notte animato**: il sole (o la luna) attraversa lentamente il
+  cielo, la luce e il gradiente del cielo cambiano con l'ora (compresa la
+  "golden hour" al tramonto), mantenendo però l'identità di ogni città.
+- **Musica di tensione dinamica**: avvicinandoti al Guardiano della Luna la
+  colonna sonora aggiunge un battito cardiaco che accelera con la vicinanza.
 - **Creatore di personaggio** con anteprima 3D dal vivo:
   - Specie: **umano**, **gatto-umanoide**, **cane-umanoide**
   - Sesso maschile/femminile (anche nella versione animale)

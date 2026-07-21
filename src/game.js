@@ -157,29 +157,83 @@ export class Game {
   }
 
   _setupLighting(dimId, theme) {
+    this._themeRef = theme;
+    const hemi = new THREE.HemisphereLight(theme.skyTop, theme.skyBottom, 0.55);
+    this.scene.add(hemi);
+    this._hemi = hemi;
+
     const amb = new THREE.AmbientLight(0xffffff, theme.ambient);
     this.scene.add(amb);
+    this._amb = amb;
 
     const sun = new THREE.DirectionalLight(theme.sunColor, theme.sunInt);
-    sun.position.set(20, 34, 12);
     sun.castShadow = true;
     sun.shadow.mapSize.set(1024, 1024);
     sun.shadow.camera.left = -64; sun.shadow.camera.right = 64;
     sun.shadow.camera.top = 64; sun.shadow.camera.bottom = -64;
     sun.shadow.bias = -0.0004;
     this.scene.add(sun);
+    this._sunLight = sun;
 
     if (theme.stars) this._addStars();
-    if (theme.bigMoon) this._addMoon();
-    if (theme.bigSun) this._addBigSun();
 
     // sfondo a gradiente cielo (cupola)
     this._addSkyDome(theme.skyTop, theme.skyBottom);
     this.scene.background = new THREE.Color(theme.skyBottom);
     this.scene.fog = new THREE.Fog(theme.fog, theme.fogNear, theme.fogFar);
 
-    const hemi = new THREE.HemisphereLight(theme.skyTop, theme.skyBottom, 0.55);
-    this.scene.add(hemi);
+    // corpo celeste che si muove (sole di giorno, luna di notte)
+    const celColor = theme.night ? 0xdfe6ff : 0xffe066;
+    const cel = new THREE.Mesh(new THREE.SphereGeometry(theme.bigSun || theme.bigMoon ? 6 : 4.5, 24, 24),
+      new THREE.MeshBasicMaterial({ color: celColor, fog: false }));
+    this.scene.add(cel);
+    const celGlow = new THREE.PointLight(theme.night ? 0x8ea2ff : 0xfff0b0, 0.5, 260);
+    this.scene.add(celGlow);
+    this._celestial = cel;
+    this._celestialGlow = celGlow;
+
+    // colori base per l'animazione giorno/notte
+    this._skyBaseTop = new THREE.Color(theme.skyTop);
+    this._skyBaseBottom = new THREE.Color(theme.skyBottom);
+    this._fogBase = new THREE.Color(theme.fog);
+    this._sunBaseColor = new THREE.Color(theme.sunColor);
+    this._duskColor = new THREE.Color(theme.night ? 0x24306a : 0xff8a4a);
+    this._dayClock = rand(0, Math.PI * 2); // fase iniziale casuale
+    this._updateDayNight(0);
+  }
+
+  // Aggiorna sole/luna, luce e cielo per simulare lo scorrere del tempo
+  _updateDayNight(dt) {
+    if (!this._sunLight) return;
+    const theme = this._themeRef;
+    this._dayClock += dt * (theme.bigSun ? 0.05 : 0.07); // ~1.5–2 min per ciclo
+    const ang = this._dayClock;
+    // elevazione oscillante: il Sole resta sempre alto, le altre scene "respirano"
+    const base = theme.bigSun ? 0.9 : (theme.night ? 0.55 : 0.5);
+    const swing = theme.bigSun ? 0.12 : 0.42;
+    const elev = base + swing * Math.sin(ang * 0.6);          // 0..~1.1 rad sopra l'orizzonte
+    const azim = ang * 0.5;
+    const cosE = Math.cos(elev), sinE = Math.sin(elev);
+    const R = 130;
+    const px = R * cosE * Math.sin(azim);
+    const py = R * sinE;
+    const pz = -R * cosE * Math.cos(azim);
+    this._celestial.position.set(px, py, pz);
+    this._celestialGlow.position.set(px, py, pz);
+    this._sunLight.position.set(px * 0.3, py * 0.3 + 10, pz * 0.3);
+
+    // "golden hour": quando il corpo celeste è basso, luce calda e fioca
+    const f = Math.max(0, Math.min(1, sinE)); // 0 basso, 1 alto
+    this._sunLight.intensity = theme.sunInt * (0.55 + 0.45 * f);
+    this._sunLight.color.copy(this._sunBaseColor).lerp(this._duskColor, (1 - f) * (theme.night ? 0.3 : 0.7));
+
+    // cielo: bordo inferiore si tinge al tramonto
+    if (this._skyDomeMat) {
+      this._skyDomeMat.uniforms.bottom.value.copy(this._skyBaseBottom).lerp(this._duskColor, (1 - f) * 0.6);
+      this._skyDomeMat.uniforms.top.value.copy(this._skyBaseTop);
+    }
+    if (this.scene.fog) this.scene.fog.color.copy(this._fogBase).lerp(this._duskColor, (1 - f) * 0.35);
+    if (this._hemi) this._hemi.intensity = 0.45 + 0.2 * f;
   }
 
   _addSkyDome(top, bottom) {
@@ -191,13 +245,8 @@ export class Game {
       fragmentShader: `varying vec3 vP; uniform vec3 top; uniform vec3 bottom;
         void main(){ float h = clamp((normalize(vP).y*0.5)+0.5, 0.0, 1.0); gl_FragColor = vec4(mix(bottom, top, h), 1.0); }`,
     });
+    this._skyDomeMat = mat;
     this.scene.add(new THREE.Mesh(geo, mat));
-  }
-
-  _addBigSun() {
-    const s = new THREE.Mesh(new THREE.SphereGeometry(6, 24, 24), new THREE.MeshBasicMaterial({ color: 0xffe066 }));
-    s.position.set(24, 34, -46); this.scene.add(s);
-    const glow = new THREE.PointLight(0xfff0b0, 0.5, 300); glow.position.copy(s.position); this.scene.add(glow);
   }
 
   _addStars() {
@@ -616,6 +665,7 @@ export class Game {
     const dt = Math.min(this.clock.getDelta(), 0.05);
     const t = this.clock.elapsedTime;
 
+    this._updateDayNight(dt);
     this._updatePlayer(dt, t);
     this._updateMonsters(dt);
     this._updatePickups();
@@ -724,6 +774,10 @@ export class Game {
       if (d < 12) UI.setBossHP(this.boss.userData.hp, this.boss.userData.maxHp);
       else UI.setBossHP(null);
       if (d < 2.0) this._damage(2);
+      // musica di tensione crescente
+      if (this.audio) this.audio.setBossProximity(Math.max(0, Math.min(1, 1 - d / 26)));
+    } else if (this.audio) {
+      this.audio.setBossProximity(0);
     }
   }
 

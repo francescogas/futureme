@@ -14,6 +14,17 @@ const $ = (id) => document.getElementById(id);
 const audio = new AudioManager();
 let touchUI = null;
 
+// Storia raccontata nell'intro cinematografica
+const STORY = [
+  `Un tempo i tre mondi — <span class="accent">Terra</span>, <span class="accent">Luna</span> e <span class="sun">Sole</span> — vivevano in perfetto equilibrio, uniti da portali silenziosi.`,
+  `Ma qualcosa si è incrinato. I portali si aprono da soli, e i mondi rischiano di <span class="warn">implodere</span> l'uno dentro l'altro.`,
+  `Dalla <span class="accent">Luna</span>, dove regna la notte eterna, mostri e ombre premono per invadere la Terra.`,
+  `E là, prigioniero, c'è il tuo <span class="accent">io parallelo</span>. Forse non è più te stesso... ma solo tu puoi salvarlo.`,
+  `Attraversa le dimensioni, raccogli gli ingredienti della <span class="sun">pozione magica</span>, sconfiggi il Guardiano e riporta la luce.<br><br>La tua avventura comincia <b>ora</b>.`,
+];
+let storyIndex = 0;
+const INTRO_KEY = "futureme_intro_seen";
+
 // ---------- Config personaggio corrente ----------
 const charConfig = {
   species: "human",
@@ -180,7 +191,7 @@ function buildDimensionCards() {
 // ============================================================
 //  Gestione schermate
 // ============================================================
-const SCREENS = ["screen-title", "screen-howto", "screen-creator", "screen-dimension", "screen-death", "screen-victory", "screen-pause"];
+const SCREENS = ["screen-title", "screen-intro", "screen-howto", "screen-creator", "screen-dimension", "screen-death", "screen-victory", "screen-pause"];
 function showScreen(id) {
   SCREENS.forEach((s) => UI.hide(s));
   if (id) UI.show(id);
@@ -271,13 +282,51 @@ function refreshContinueButton() {
   else btn.classList.add("hidden");
 }
 
+// ---------- Intro cinematografica ----------
+function showIntro() {
+  storyIndex = 0;
+  renderStorySlide();
+  showScreen("screen-intro");
+}
+function renderStorySlide() {
+  const slide = $("intro-slide");
+  slide.innerHTML = STORY[storyIndex];
+  slide.classList.remove("show"); void slide.offsetWidth; slide.classList.add("show");
+  $("btn-intro-next").textContent = storyIndex >= STORY.length - 1 ? "Crea il tuo personaggio →" : "Avanti →";
+  const dots = $("intro-dots");
+  dots.innerHTML = "";
+  for (let i = 0; i < STORY.length; i++) {
+    const d = document.createElement("div");
+    d.className = "dot" + (i === storyIndex ? " on" : "");
+    dots.appendChild(d);
+  }
+}
+function nextStorySlide() {
+  if (storyIndex >= STORY.length - 1) { finishIntro(); return; }
+  storyIndex++;
+  renderStorySlide();
+}
+function finishIntro() {
+  try { localStorage.setItem(INTRO_KEY, "1"); } catch (e) {}
+  showScreen("screen-creator");
+}
+
 function init() {
   preview = new CreatorPreview($(".creator-right") || document.querySelector(".creator-right"));
   setupCreatorControls();
   buildDimensionCards();
 
-  $("btn-start").onclick = () => { audio.init(); showScreen("screen-creator"); };
+  $("btn-start").onclick = () => {
+    audio.init();
+    // mostra l'intro solo la prima volta; poi si può rivedere con "La storia"
+    let seen = false;
+    try { seen = localStorage.getItem(INTRO_KEY) === "1"; } catch (e) {}
+    if (seen) showScreen("screen-creator"); else showIntro();
+  };
   $("btn-continue").onclick = () => continueGame();
+  $("btn-story").onclick = () => { audio.init(); showIntro(); };
+  $("btn-intro-next").onclick = () => nextStorySlide();
+  $("btn-intro-skip").onclick = () => finishIntro();
 
   $("btn-mute").onclick = () => {
     const muted = audio.toggleMute();
