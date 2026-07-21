@@ -5,9 +5,9 @@ import * as THREE from "three";
 import { buildAvatar, animateAvatar } from "./character.js";
 import {
   buildDimension, makeItem, makePortal, makeNPC, makeMonster,
-  makeAlterEgo, makeBoss, animateWorldObjects,
+  makeAlterEgo, makeBoss, makePowerup, animateWorldObjects,
 } from "./world.js";
-import { DIMENSIONS, POTION_RECIPE, NPC_LINES, CITY_NPCS, ITEMS, REWARDS } from "./data.js";
+import { DIMENSIONS, POTION_RECIPE, NPC_LINES, CITY_NPCS, ITEMS, REWARDS, POWERUPS } from "./data.js";
 import { Minimap } from "./minimap.js";
 import { Weather } from "./weather.js";
 import { Profile } from "./progression.js";
@@ -100,6 +100,9 @@ export class Game {
     // cosmetici e HUD del profilo
     this.trailCfg = Profile.equippedTrail();
     this.combo = 0;
+    this.powerups = {}; // type -> secondi rimanenti
+    this.runScore = 0;
+    UI.setPowerups(this.powerups);
     UI.setCoins(Profile.coins);
     UI.setLevel(Profile.level, Profile.levelProgress().frac);
 
@@ -293,9 +296,17 @@ export class Game {
 
   // ---------- Popola con oggetti/nemici ----------
   _populate(dimId, level) {
+    this.objects.powerups = [];
     const spawnAt = (fn) => {
       const a = rand(0, Math.PI * 2), r = rand(6, this.worldSize - 10);
       return fn(Math.cos(a) * r, Math.sin(a) * r);
+    };
+    const puTypes = Object.keys(POWERUPS);
+    const spawnPowerups = (n) => {
+      for (let i = 0; i < n; i++) {
+        const pu = spawnAt((x, z) => makePowerup(pick(puTypes), x, z));
+        this.objects.powerups.push(pu); this.worldRoot.add(pu);
+      }
     };
 
     if (dimId === "earth") {
@@ -307,6 +318,7 @@ export class Game {
       this._addPortal(makePortal(-14, -6, DIMENSIONS.moon.color, true), { dest: "moon", need: "passport", label: "Portale ignoto" });
       this._addPortal(makePortal(0, 16, DIMENSIONS.sun.color, true), { dest: "sun", need: "passport", label: "Portale ignoto" });
       for (let i = 0; i < 2; i++) { const n = spawnAt((x, z) => makeNPC(x, z, 0x6a5acd)); this._addNPC(n); }
+      spawnPowerups(2);
     }
 
     else if (dimId === "moon") {
@@ -322,14 +334,17 @@ export class Game {
       }
       // portale di uscita verso il Sole
       this._addPortal(makePortal(0, -16, DIMENSIONS.sun.color, false), { dest: "sun", need: null, label: "Portale verso il Sole" });
-      // mostri
+      // mostri (alcuni d'élite dai livelli avanzati)
       const nMon = 3 + level;
       const types = ["zombie", "vampire", "werewolf"];
+      const nElite = Math.max(0, Math.floor((level - 1) / 2));
       for (let i = 0; i < nMon; i++) {
-        const m = spawnAt((x, z) => makeMonster(pick(types), x, z));
+        const elite = i < nElite;
+        const m = spawnAt((x, z) => makeMonster(pick(types), x, z, elite));
         this._addMonster(m);
       }
       for (let i = 0; i < 1; i++) { const n = spawnAt((x, z) => makeNPC(x, z, 0x9060ff)); this._addNPC(n); }
+      spawnPowerups(3);
       // il tuo io prigioniero (evil)
       this._spawnAlterEgo(true);
       // boss guardiano vicino al tuo io
@@ -344,6 +359,7 @@ export class Game {
       this._addPortal(makePortal(0, -16, DIMENSIONS.moon.color, false), { dest: "moon", need: null, label: "Portale verso la Luna" });
       this._addPortal(makePortal(14, 6, DIMENSIONS.earth.color, false), { dest: "earth", need: null, label: "Portale verso la Terra" });
       for (let i = 0; i < 2; i++) { const n = spawnAt((x, z) => makeNPC(x, z, 0xffb347)); this._addNPC(n); }
+      spawnPowerups(2);
       // il tuo io buono (già salvato? no: qui è amichevole)
       this._spawnAlterEgo(false);
     }
@@ -629,6 +645,8 @@ export class Game {
             Profile.recordVictory();
             Profile.recordRun(this.state.deaths, 1000 - this.state.challenges);
             this._reward("victory");
+            this.runScore += 2000; // bonus vittoria
+            Profile.addScore(this.charConfig.name, this.runScore, true);
             this._unlockAch("savior");
             this.running = false;
             setTimeout(() => this.cb.onVictory(this.state), 900);
@@ -662,7 +680,9 @@ export class Game {
 
   _reward(event) {
     const r = REWARDS[event]; if (!r) return;
-    const coins = Math.round(r.coins * (event === "pickup" || event === "banish" ? this.comboMul : 1));
+    let coins = Math.round(r.coins * (event === "pickup" || event === "banish" ? this.comboMul : 1));
+    if (this.powerups.coins2x > 0) coins *= 2;
+    this.runScore += coins;
     Profile.addCoins(coins);
     const lv = Profile.addXP(r.xp);
     UI.setCoins(Profile.coins);
@@ -690,6 +710,7 @@ export class Game {
   // ---------- Danno / morte ----------
   _damage(n) {
     if (this.hitCooldown > 0) return;
+    if (this.powerups.shield > 0) { this.hitCooldown = 0.5; UI.hint("🛡️ Bloccato!"); return; }
     this.hitCooldown = 1.0;
     this.state.hp -= n;
     this.shake = Math.min(0.9, 0.35 * n);
@@ -706,7 +727,9 @@ export class Game {
     this.state.deaths++;
     this.state.challenges += 100;
     this.combo = 0; UI.hideCombo();
+    this.powerups = {}; UI.setPowerups(this.powerups);
     Profile.recordRun(this.state.deaths, Math.max(0, 1000 - this.state.challenges));
+    Profile.addScore(this.charConfig.name, this.runScore, false);
     this.cb.onStateChange(this.state);
     this.cb.onDeath(this.state);
   }
@@ -748,13 +771,23 @@ export class Game {
       this.comboTimer -= dt;
       if (this.comboTimer <= 0) { this.combo = 0; UI.hideCombo(); }
     }
+    // decadimento power-up
+    let puChanged = false;
+    for (const k of Object.keys(this.powerups)) {
+      if (this.powerups[k] > 0) {
+        this.powerups[k] -= dt;
+        if (this.powerups[k] <= 0) { delete this.powerups[k]; puChanged = true; }
+      }
+    }
+    if (puChanged || Object.keys(this.powerups).length) UI.setPowerups(this.powerups);
 
     this.renderer.render(this.scene, this.camera);
   }
 
   _updatePlayer(dt, t) {
     const run = this.keys.has("ShiftLeft") || this.keys.has("ShiftRight");
-    const moveMul = this.weather ? this.weather.mods.moveMul : 1;
+    let moveMul = this.weather ? this.weather.mods.moveMul : 1;
+    if (this.powerups.speed > 0) moveMul *= 1.6;
     const speed = (run ? 9 : 5) * moveMul * dt;
     let mx = 0, mz = 0;
     if (this.keys.has("KeyW") || this.keys.has("ArrowUp")) mz -= 1;
@@ -830,22 +863,23 @@ export class Game {
     const px = this.player.position.x, pz = this.player.position.z;
     const rangeMul = this.weather ? this.weather.mods.monsterRangeMul : 1;
     const sight = 22 * rangeMul;
+    const frozen = this.powerups.freeze > 0;
     for (const m of this.objects.monsters) {
       const dx = px - m.position.x, dz = pz - m.position.z;
       const d = Math.hypot(dx, dz);
-      if (d < sight && d > 0.01) {
+      if (!frozen && d < sight && d > 0.01) {
         m.position.x += (dx / d) * m.userData.speed * dt;
         m.position.z += (dz / d) * m.userData.speed * dt;
         m.rotation.y = Math.atan2(dx, dz);
       }
-      m.position.y = Math.abs(Math.sin(this.clock.elapsedTime * 6 + m.position.x)) * 0.15;
-      if (d < 1.3) this._damage(1);
+      m.position.y = frozen ? 0 : Math.abs(Math.sin(this.clock.elapsedTime * 6 + m.position.x)) * 0.15;
+      if (!frozen && d < 1.3) this._damage(1);
     }
     // Boss: insegue e colpisce più forte
     if (this.boss) {
       const dx = px - this.boss.position.x, dz = pz - this.boss.position.z;
       const d = Math.hypot(dx, dz);
-      if (d < 30 && d > 0.01) {
+      if (!frozen && d < 30 && d > 0.01) {
         this.boss.position.x += (dx / d) * this.boss.userData.speed * dt;
         this.boss.position.z += (dz / d) * this.boss.userData.speed * dt;
         this.boss.rotation.y = Math.atan2(dx, dz);
@@ -854,7 +888,7 @@ export class Game {
       // mostra la barra HP quando sei vicino
       if (d < 12) UI.setBossHP(this.boss.userData.hp, this.boss.userData.maxHp);
       else UI.setBossHP(null);
-      if (d < 2.0) this._damage(2);
+      if (!frozen && d < 2.0) this._damage(2);
       // musica di tensione crescente
       if (this.audio) this.audio.setBossProximity(Math.max(0, Math.min(1, 1 - d / 26)));
     } else if (this.audio) {
@@ -908,8 +942,37 @@ export class Game {
     }
   }
 
+  _activatePowerup(type) {
+    const def = POWERUPS[type];
+    this.powerups[type] = def.duration;
+    UI.setPowerups(this.powerups);
+    if (this.audio) this.audio.potion();
+    UI.toast(`${def.emoji} ${def.label}! ${def.desc}`, 2000);
+    this.shake = 0.2;
+  }
+
   _updatePickups() {
     const px = this.player.position.x, pz = this.player.position.z;
+    // power-up
+    for (let i = this.objects.powerups.length - 1; i >= 0; i--) {
+      const pu = this.objects.powerups[i];
+      if (dist2(px, pz, pu.position.x, pu.position.z) < 1.6) {
+        this._spawnBurst(pu.position.x, pu.position.y, pu.position.z, POWERUPS[pu.userData.type].color, 20);
+        this.worldRoot.remove(pu);
+        this.objects.powerups.splice(i, 1);
+        this._activatePowerup(pu.userData.type);
+      }
+    }
+    // magnete: attira gli oggetti vicini
+    if (this.powerups.magnet > 0) {
+      for (const it of this.objects.items) {
+        const d = Math.hypot(px - it.position.x, pz - it.position.z);
+        if (d < 12 && d > 0.1) {
+          it.position.x += (px - it.position.x) / d * 14 * (1 / 60);
+          it.position.z += (pz - it.position.z) / d * 14 * (1 / 60);
+        }
+      }
+    }
     for (let i = this.objects.items.length - 1; i >= 0; i--) {
       const it = this.objects.items[i];
       if (dist2(px, pz, it.position.x, it.position.z) < 1.4) {

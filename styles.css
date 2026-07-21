@@ -209,6 +209,20 @@ h2 { margin-bottom: 14px; font-size: 26px; }
 .ach-card.unlocked .ac-name { color: var(--gold); }
 .ach-card .ac-desc { font-size: 12px; color: #a9b8dd; }
 
+/* ---------- Classifica ---------- */
+.lb-list { display: flex; flex-direction: column; gap: 6px; margin: 14px 0 20px; }
+.lb-row {
+  display: flex; align-items: center; gap: 12px; padding: 10px 14px; border-radius: 12px;
+  background: rgba(10,14,30,0.7); border: 1px solid var(--panel-border);
+}
+.lb-row.top { border-color: var(--gold); box-shadow: 0 0 16px rgba(255,211,92,0.25); }
+.lb-rank { font-weight: 900; font-size: 18px; width: 34px; color: var(--neon); }
+.lb-row.top .lb-rank { color: var(--gold); }
+.lb-name { flex: 1; font-weight: 700; }
+.lb-meta { font-size: 12px; color: #9fb0d6; }
+.lb-score { font-weight: 800; color: var(--gold); }
+.lb-empty { color: #9fb0d6; padding: 20px; text-align: center; }
+
 .share-card { width: 100%; max-width: 480px; border-radius: 14px; margin: 14px 0; border: 1px solid var(--panel-border); }
 .victory-row { display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
 
@@ -261,6 +275,19 @@ h2 { margin-bottom: 14px; font-size: 26px; }
 .hud-rank b { color: var(--neon); }
 .xpbar { height: 5px; border-radius: 4px; background: rgba(120,160,255,0.15); margin-top: 5px; overflow: hidden; }
 #xpbar-fill { height: 100%; width: 0%; background: linear-gradient(90deg, var(--neon), var(--neon2)); transition: width .4s; }
+
+.hud-powerups {
+  position: absolute; left: 14px; top: 46%; transform: translateY(-50%);
+  display: flex; flex-direction: column; gap: 8px;
+}
+.pu-chip {
+  width: 52px; background: var(--panel); border: 1px solid var(--neon);
+  border-radius: 12px; padding: 6px 0 4px; text-align: center;
+  box-shadow: 0 0 16px rgba(77,243,255,0.3);
+}
+.pu-chip .pu-emoji { font-size: 22px; }
+.pu-chip .pu-bar { height: 4px; margin: 4px 6px 0; border-radius: 3px; background: rgba(255,255,255,0.15); overflow: hidden; }
+.pu-chip .pu-fill { height: 100%; background: var(--neon); transition: width .2s linear; }
 
 .hud-combo {
   position: absolute; top: 44%; right: 6%; transform: translateY(-50%);

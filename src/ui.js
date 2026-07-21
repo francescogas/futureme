@@ -1,7 +1,7 @@
 // ============================================================
 //  FUTUREME — helper interfaccia (HUD, toast, dialoghi)
 // ============================================================
-import { ITEMS, DIMENSIONS } from "./data.js";
+import { ITEMS, DIMENSIONS, POWERUPS } from "./data.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -116,6 +116,22 @@ export function achievementToast(a) {
   el.style.animation = "none"; void el.offsetWidth; el.style.animation = "";
   clearTimeout(achTimer);
   achTimer = setTimeout(() => el.classList.add("hidden"), 3600);
+}
+
+export function setPowerups(active) {
+  const box = $("hud-powerups");
+  if (!box) return;
+  box.innerHTML = "";
+  for (const [type, remaining] of Object.entries(active)) {
+    if (remaining <= 0) continue;
+    const def = POWERUPS[type]; if (!def) continue;
+    const el = document.createElement("div");
+    el.className = "pu-chip";
+    const frac = Math.max(0, Math.min(1, remaining / def.duration)) * 100;
+    el.innerHTML = `<div class="pu-emoji">${def.emoji}</div><div class="pu-bar"><div class="pu-fill" style="width:${frac}%;background:#${def.color.toString(16).padStart(6, "0")}"></div></div>`;
+    el.title = def.label;
+    box.appendChild(el);
+  }
 }
 
 export function setWeather(emoji, name) {

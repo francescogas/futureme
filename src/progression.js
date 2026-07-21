@@ -20,6 +20,7 @@ function fresh() {
     achievements: {},
     dailyStreak: 0, lastDaily: "",
     best: { fewestDeaths: null, mostChallengesCleared: 0, bestCombo: 0 },
+    leaderboard: [],
   };
 }
 
@@ -138,6 +139,20 @@ class ProfileManager {
   }
   hasAchievement(id) { return !!this.p.achievements[id]; }
   achievementsUnlockedCount() { return Object.keys(this.p.achievements).length; }
+
+  // ---- classifica (locale, pronta per un backend) ----
+  addScore(name, score, won) {
+    if (!this.p.leaderboard) this.p.leaderboard = [];
+    this.p.leaderboard.push({
+      name: (name || "Eroe").slice(0, 16), score: Math.round(score), won: !!won,
+      level: this.p.level, date: todayStr(),
+    });
+    this.p.leaderboard.sort((a, b) => b.score - a.score);
+    this.p.leaderboard = this.p.leaderboard.slice(0, 10);
+    this.save();
+    return this.p.leaderboard.findIndex((e) => e.score === Math.round(score));
+  }
+  leaderboard() { return this.p.leaderboard || []; }
 }
 
 export const Profile = new ProfileManager();

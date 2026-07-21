@@ -2,7 +2,7 @@
 //  FUTUREME — generazione procedurale dei mondi
 // ============================================================
 import * as THREE from "three";
-import { CITIES, ITEMS } from "./data.js";
+import { CITIES, ITEMS, POWERUPS } from "./data.js";
 
 const rand = (min, max) => min + Math.random() * (max - min);
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
@@ -32,6 +32,27 @@ export function makeItem(type, x, z) {
   g.add(halo);
   g.position.set(x, 0.9, z);
   g.userData = { kind: "item", type, core, halo, baseY: 0.9, spin: rand(0.5, 1.5) };
+  return g;
+}
+
+// ---------- Power-up (bonus a tempo) ----------
+export function makePowerup(type, x, z) {
+  const def = POWERUPS[type] || { color: 0xffffff };
+  const g = new THREE.Group();
+  const core = new THREE.Mesh(
+    new THREE.OctahedronGeometry(0.34, 0),
+    stdMat(def.color, { metal: 0.5, rough: 0.2, emissive: def.color, ei: 0.7 })
+  );
+  g.add(core);
+  const cage = new THREE.Mesh(
+    new THREE.TorusGeometry(0.5, 0.05, 8, 20),
+    stdMat(def.color, { emissive: def.color, ei: 0.8 })
+  );
+  g.add(cage);
+  const light = new THREE.PointLight(def.color, 0.8, 6);
+  g.add(light);
+  g.position.set(x, 1.1, z);
+  g.userData = { kind: "powerup", type, core, cage, baseY: 1.1, spin: 1.4 };
   return g;
 }
 
@@ -81,7 +102,7 @@ export function makeNPC(x, z, color) {
 }
 
 // ---------- Monster (Luna) ----------
-export function makeMonster(kind, x, z) {
+export function makeMonster(kind, x, z, elite = false) {
   const g = new THREE.Group();
   let bodyColor = 0x5a7a4a, headColor = 0x8ab06a;
   if (kind === "zombie") { bodyColor = 0x4a6b3a; headColor = 0x7fa05a; }
@@ -113,8 +134,18 @@ export function makeMonster(kind, x, z) {
     cape.position.set(0, 1.1, -0.25);
     g.add(cape);
   }
+  // Élite: più grande, più veloce, aura minacciosa
+  if (elite) {
+    g.scale.setScalar(1.35);
+    const aura = new THREE.Mesh(
+      new THREE.RingGeometry(0.5, 0.7, 20),
+      new THREE.MeshBasicMaterial({ color: 0xff2a2a, transparent: true, opacity: 0.5, side: THREE.DoubleSide })
+    );
+    aura.rotation.x = -Math.PI / 2; aura.position.y = 0.05; g.add(aura);
+    g.add(new THREE.PointLight(0xff2020, 0.6, 6));
+  }
   g.position.set(x, 0, z);
-  g.userData = { kind: "monster", type: kind, head, speed: rand(1.6, 2.8), baseY: 0, hp: 2 };
+  g.userData = { kind: "monster", type: kind, head, speed: elite ? rand(3.0, 3.8) : rand(1.6, 2.8), baseY: 0, hp: 2, elite };
   g.traverse((o) => { if (o.isMesh) o.castShadow = true; });
   return g;
 }
@@ -593,6 +624,14 @@ export function animateWorldObjects(objects, t, dt) {
   }
   for (const p of objects.portals) {
     p.userData.ring.rotation.z = t * (p.userData.locked ? 0.3 : 1.2);
+  }
+  if (objects.powerups) {
+    for (const pu of objects.powerups) {
+      pu.userData.core.rotation.y += pu.userData.spin * dt;
+      pu.userData.core.rotation.x += pu.userData.spin * 0.5 * dt;
+      pu.userData.cage.rotation.z = t * 2;
+      pu.position.y = pu.userData.baseY + Math.sin(t * 3 + pu.position.x) * 0.2;
+    }
   }
   for (const n of objects.npcs) {
     n.position.y = Math.sin(t * 2 + n.position.x) * 0.05;

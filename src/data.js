@@ -186,6 +186,15 @@ export const CITY_NPCS = {
   },
 };
 
+// Power-up attivi a tempo (raccoglibili nel mondo)
+export const POWERUPS = {
+  speed:  { emoji: "⚡", label: "Velocità",      color: 0x4df3ff, duration: 8,  desc: "Corri più veloce" },
+  shield: { emoji: "🛡️", label: "Scudo",         color: 0x9be0ff, duration: 8,  desc: "Immune ai danni" },
+  magnet: { emoji: "🧲", label: "Magnete",        color: 0xb96bff, duration: 10, desc: "Attira gli oggetti" },
+  coins2x:{ emoji: "💰", label: "Doppie Monete",  color: 0xffd35c, duration: 12, desc: "Monete raddoppiate" },
+  freeze: { emoji: "❄️", label: "Congela",        color: 0xcfeaff, duration: 6,  desc: "Blocca i mostri" },
+};
+
 // Frasi degli NPC "persone strane"
 export const NPC_LINES = {
   earth: [

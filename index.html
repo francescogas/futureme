@@ -52,6 +52,7 @@
     <div class="hud-quest hidden" id="hud-quest"></div>
 
     <div class="hud-hint" id="hud-hint"></div>
+    <div class="hud-powerups" id="hud-powerups"></div>
     <div class="hud-combo" id="hud-combo"></div>
     <div class="coin-popups" id="coin-popups"></div>
     <div class="ach-toast hidden" id="ach-toast"></div>
@@ -106,6 +107,7 @@
       <div class="title-row">
         <button id="btn-shop" class="ghost-btn">🛒 Negozio</button>
         <button id="btn-achievements" class="ghost-btn">🏆 Obiettivi</button>
+        <button id="btn-leaderboard" class="ghost-btn">📊 Classifica</button>
         <button id="btn-howto" class="ghost-btn">Come si gioca</button>
         <button id="btn-story" class="ghost-btn">La storia</button>
       </div>
@@ -219,6 +221,16 @@
       <p class="muted">Potrai viaggiare tra i mondi attraverso i portali.</p>
       <div class="dim-cards" id="dim-cards"></div>
       <button id="btn-dimension-back" class="ghost-btn">Indietro</button>
+    </div>
+  </div>
+
+  <!-- ===================== CLASSIFICA ===================== -->
+  <div id="screen-leaderboard" class="overlay hidden">
+    <div class="panel">
+      <h2>📊 Classifica</h2>
+      <p class="muted">I tuoi migliori risultati. Batti il tuo record!</p>
+      <div class="lb-list" id="lb-list"></div>
+      <button id="btn-lb-back" class="big-btn">Indietro</button>
     </div>
   </div>
 

@@ -225,7 +225,7 @@ function buildDimensionCards() {
 // ============================================================
 //  Gestione schermate
 // ============================================================
-const SCREENS = ["screen-title", "screen-intro", "screen-howto", "screen-creator", "screen-dimension", "screen-death", "screen-victory", "screen-pause", "screen-shop", "screen-achievements"];
+const SCREENS = ["screen-title", "screen-intro", "screen-howto", "screen-creator", "screen-dimension", "screen-death", "screen-victory", "screen-pause", "screen-shop", "screen-achievements", "screen-leaderboard"];
 function showScreen(id) {
   SCREENS.forEach((s) => UI.hide(s));
   if (id) UI.show(id);
@@ -393,6 +393,23 @@ function buildAchievements() {
   }
 }
 
+// ---------- Classifica ----------
+function buildLeaderboard() {
+  const list = $("lb-list");
+  list.innerHTML = "";
+  const entries = Profile.leaderboard();
+  if (!entries.length) { list.innerHTML = `<div class="lb-empty">Nessun risultato ancora. Gioca una partita per entrare in classifica!</div>`; return; }
+  entries.forEach((e, i) => {
+    const row = document.createElement("div");
+    row.className = "lb-row" + (i === 0 ? " top" : "");
+    const medal = i === 0 ? "🥇" : i === 1 ? "🥈" : i === 2 ? "🥉" : (i + 1);
+    row.innerHTML = `<div class="lb-rank">${medal}</div>
+      <div class="lb-name">${e.name} ${e.won ? "🏆" : ""}<div class="lb-meta">Grado ${e.level} · ${e.date}</div></div>
+      <div class="lb-score">${e.score} pt</div>`;
+    list.appendChild(row);
+  });
+}
+
 // ---------- Ricompensa giornaliera ----------
 function maybeDailyReward() {
   if (!Profile.dailyAvailable()) return;
@@ -508,6 +525,8 @@ function init() {
   $("btn-shop-back").onclick = () => { showScreen("screen-title"); refreshTitleBar(); };
   $("btn-achievements").onclick = () => { buildAchievements(); showScreen("screen-achievements"); };
   $("btn-ach-back").onclick = () => showScreen("screen-title");
+  $("btn-leaderboard").onclick = () => { buildLeaderboard(); showScreen("screen-leaderboard"); };
+  $("btn-lb-back").onclick = () => showScreen("screen-title");
   $("btn-share").onclick = () => downloadShareCard();
 
   // mostra "Continua" se esiste un salvataggio

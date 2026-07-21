@@ -49,6 +49,13 @@ dello schermo per ruotare la telecamera.
   giorno — il classico hook di ritorno.
 - **Record personali** e statistiche mostrati sul titolo (morti minime, sfide
   completate, combo record, vittorie).
+- **Power-up attivi a tempo**: raccogli bonus sparsi nei mondi — ⚡ Velocità,
+  🛡️ Scudo (immune ai danni), 🧲 Magnete (attira gli oggetti), 💰 Doppie Monete,
+  ❄️ Congela (blocca i mostri) — con indicatore di durata nell'HUD.
+- **Nemici d'élite**: dai livelli avanzati della Luna compaiono mostri più grandi,
+  veloci e minacciosi (aura rossa).
+- **Classifica dei migliori risultati**: i tuoi punteggi migliori in una board con
+  medaglie (locale, pronta per un backend online).
 - **Card di vittoria condivisibile**: a fine partita generi un'immagine con le
   tue statistiche da scaricare e condividere (#FUTUREME) — per creare community.
 
