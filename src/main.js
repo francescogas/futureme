@@ -5,9 +5,11 @@ import * as THREE from "three";
 import { Game } from "./game.js";
 import { buildAvatar, animateAvatar } from "./character.js";
 import { SPECIES, SEXES, OUTFITS, SKIN_COLORS, DIMENSIONS } from "./data.js";
+import { AudioManager } from "./audio.js";
 import * as UI from "./ui.js";
 
 const $ = (id) => document.getElementById(id);
+const audio = new AudioManager();
 
 // ---------- Config personaggio corrente ----------
 const charConfig = {
@@ -191,13 +193,17 @@ function startGame(startDim) {
   showScreen(null);
   UI.hide("screen-dimension");
   UI.show("hud");
+  audio.init();
+  audio.resume();
   if (!game) {
     game = new Game($("scene"), {
       onDeath: (state) => onDeath(state),
       onVictory: (state) => onVictory(state),
       onStateChange: (state) => UI.updateHUD(state),
+      audio,
     });
   }
+  UI.setQuest(null);
   game.start(charConfig);
   // se l'utente ha scelto una dimensione diversa dalla Terra, viaggia subito
   if (startDim && startDim !== "earth") {
@@ -240,7 +246,12 @@ function init() {
   setupCreatorControls();
   buildDimensionCards();
 
-  $("btn-start").onclick = () => showScreen("screen-creator");
+  $("btn-start").onclick = () => { audio.init(); showScreen("screen-creator"); };
+
+  $("btn-mute").onclick = () => {
+    const muted = audio.toggleMute();
+    $("btn-mute").textContent = muted ? "🔇" : "🔊";
+  };
   $("btn-howto").onclick = () => showScreen("screen-howto");
   $("btn-howto-back").onclick = () => showScreen("screen-title");
   $("btn-creator-back").onclick = () => showScreen("screen-title");
@@ -251,7 +262,7 @@ function init() {
   $("btn-restart").onclick = () => { showScreen("screen-creator"); };
 
   $("btn-pause").onclick = () => { game.pause(); UI.hide("hud"); showScreen("screen-pause"); };
-  $("btn-resume").onclick = () => { showScreen(null); UI.show("hud"); game.resume(); };
+  $("btn-resume").onclick = () => { showScreen(null); UI.show("hud"); audio.resume(); game.resume(); };
   $("btn-quit").onclick = () => { game.pause(); UI.hide("hud"); showScreen("screen-title"); };
 
   // Esc = pausa

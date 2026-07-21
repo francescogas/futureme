@@ -27,8 +27,9 @@ In alternativa qualsiasi server statico (`npx serve`, estensione "Live Server" d
 | **WASD / Frecce** | Muoviti nel mondo 3D |
 | **Mouse (trascina)** | Ruota la telecamera |
 | **Shift** | Corri |
-| **E / Spazio** | Interagisci (persone, portali, il tuo io) |
+| **E / Spazio** | Interagisci (persone, portali, respingi mostri, il tuo io) |
 | **Esc** | Pausa |
+| **🔊 (in alto a destra)** | Attiva/disattiva l'audio |
 
 ## ✨ Caratteristiche
 
@@ -50,7 +51,15 @@ In alternativa qualsiasi server statico (`npx serve`, estensione "Live Server" d
   prigioniero e forse è diventato malvagio: solo la pozione del Sole può salvarlo
   e portarlo nella luce.
 - **Contatore Sfide** — parti da **1000**; ogni volta che muori aumentano di **100**.
-- **Persone strane** (NPC) che ti danno indizi sulla via da seguire.
+- **Persone strane** (NPC) che ti danno indizi e **missioni extra** (bandisci N
+  mostri, raccogli N chiavi, componi la pozione...) con ricompense.
+- **Combattimento**: sulla Luna avvicinati ai mostri e premi **E** per respingerli
+  con un oggetto di difesa (🔦 ⚙️ ✝️ 🧄).
+- **Minimappa / radar** in tempo reale con giocatore, oggetti, portali, NPC,
+  mostri e il tuo io parallelo.
+- **Audio e musica procedurali** (Web Audio API, nessun file esterno): colonna
+  sonora ambientale diversa per ogni dimensione ed effetti sonori per raccolta,
+  portali, colpi, pozione e vittoria. Disattivabile con 🔊.
 - Sistema di **livelli**, salute a cuori, inventario, portali, morte e vittoria.
 
 ## 🏆 Obiettivo
@@ -68,11 +77,13 @@ styles.css          # interfaccia e stile neon/futuristico
 vendor/three/       # Three.js incluso localmente (nessuna dipendenza da internet)
 src/
   main.js           # orchestratore: schermate, creatore con anteprima 3D
-  game.js           # motore di gioco: loop, controlli, collisioni, portali, mostri
+  game.js           # motore di gioco: loop, controlli, collisioni, portali, mostri, missioni
   character.js      # avatar 3D procedurale (specie, sesso, abiti) + animazioni
   world.js          # generazione procedurale dei mondi, oggetti, nemici, portali
   data.js           # configurazione (specie, stili, città, oggetti, dialoghi)
   ui.js             # HUD, toast, dialoghi
+  audio.js          # musica ed effetti sonori procedurali (Web Audio API)
+  minimap.js        # radar/minimappa 2D su canvas
 ```
 
 ## 🛠️ Note tecniche

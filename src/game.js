@@ -8,6 +8,7 @@ import {
   makeAlterEgo, animateWorldObjects,
 } from "./world.js";
 import { DIMENSIONS, POTION_RECIPE, NPC_LINES, ITEMS } from "./data.js";
+import { Minimap } from "./minimap.js";
 import * as UI from "./ui.js";
 
 const rand = (a, b) => a + Math.random() * (b - a);
@@ -17,7 +18,9 @@ const dist2 = (ax, az, bx, bz) => { const dx = ax - bx, dz = az - bz; return dx 
 export class Game {
   constructor(canvas, callbacks) {
     this.canvas = canvas;
-    this.cb = callbacks; // { onDeath, onVictory, onStateChange }
+    this.cb = callbacks; // { onDeath, onVictory, onStateChange, audio }
+    this.audio = callbacks.audio || null;
+    this.minimap = new Minimap();
     this.clock = new THREE.Clock();
     this.keys = new Set();
     this.running = false;
@@ -83,6 +86,9 @@ export class Game {
       alterFreed: false,
       talkedNPCs: 0,
       portalsClosed: 0,
+      keysFound: 0,
+      monstersBanished: 0,
+      quest: null,
     };
     // avatar del giocatore
     const built = buildAvatar(charConfig);
@@ -127,6 +133,7 @@ export class Game {
     this.scene.add(this.player);
 
     this._setObjectiveForDim(dimId);
+    if (this.audio) this.audio.setAmbient(dimId);
     this.cb.onStateChange(this.state);
     if (spawnMsg) UI.toast(spawnMsg);
   }
@@ -279,6 +286,13 @@ export class Game {
       this.interactLock = 0.4;
       return;
     }
+    // Mostro vicino: bandiscilo con un oggetto di difesa
+    let nearestMon = null, nearestD = 16; // entro 4 unità
+    for (const m of this.objects.monsters) {
+      const d = dist2(px, pz, m.position.x, m.position.z);
+      if (d < nearestD) { nearestD = d; nearestMon = m; }
+    }
+    if (nearestMon) { this._banishMonster(nearestMon); this.interactLock = 0.4; return; }
     // NPC
     for (const n of this.objects.npcs) {
       if (dist2(px, pz, n.position.x, n.position.z) < 6) { this._talkNPC(n); this.interactLock = 0.4; return; }
@@ -291,13 +305,91 @@ export class Game {
   }
 
   _talkNPC(n) {
+    if (this.audio) this.audio.talk();
     const line = pick(NPC_LINES[this.state.dim]);
     if (!n.userData.talked) {
       n.userData.talked = true;
       this.state.talkedNPCs++;
       this._progress(5);
     }
+    // Offri una missione se non ce n'è una attiva
+    if (!this.state.quest && !n.userData.questGiven) {
+      const q = this._makeQuest();
+      n.userData.questGiven = true;
+      UI.openDialog("Persona strana", line + "\n\n« " + q.desc + " »", [
+        { label: "Accetto la sfida", primary: true, cb: () => { UI.closeDialog(); this._assignQuest(q); } },
+        { label: "Più tardi", cb: () => UI.closeDialog() },
+      ]);
+      return;
+    }
     UI.openDialog("Persona strana", line, [{ label: "Capito", primary: true, cb: () => UI.closeDialog() }]);
+  }
+
+  // ---------- Sistema di missioni (sfide extra) ----------
+  _makeQuest() {
+    const dim = this.state.dim;
+    if (dim === "moon") {
+      return { type: "banish", target: 3, reward: "torch", desc: "Sfida: bandisci 3 mostri per ottenere una 🔦 torcia." };
+    } else if (dim === "sun") {
+      return { type: "ingredients", target: 3, reward: "crystal", desc: "Sfida: raccogli i 3 ingredienti della pozione." };
+    }
+    return { type: "keys", target: 2, reward: "passport", desc: "Sfida: raccogli 2 🔑 chiavi per un 🛂 passaporto in dono." };
+  }
+
+  _assignQuest(q) {
+    q.startBanish = this.state.monstersBanished;
+    q.startKeys = this.state.keysFound;
+    this.state.quest = q;
+    UI.toast("🎯 Nuova sfida accettata!");
+    this._updateQuestHUD();
+  }
+
+  _questProgress() {
+    const q = this.state.quest;
+    if (!q) return 0;
+    if (q.type === "banish") return this.state.monstersBanished - q.startBanish;
+    if (q.type === "keys") return this.state.keysFound - q.startKeys;
+    if (q.type === "ingredients") return POTION_RECIPE.filter((t) => this._hasItem(t)).length;
+    return 0;
+  }
+
+  _updateQuestHUD() {
+    const q = this.state.quest;
+    if (!q) { UI.setQuest(null); return; }
+    UI.setQuest(`${q.desc.replace(/^Sfida:\s*/, "")} (${Math.min(this._questProgress(), q.target)}/${q.target})`);
+  }
+
+  _checkQuest() {
+    const q = this.state.quest;
+    if (!q) return;
+    this._updateQuestHUD();
+    if (this._questProgress() >= q.target) {
+      this._giveItem(q.reward);
+      this._progress(50);
+      this.state.quest = null;
+      UI.setQuest(null);
+      if (this.audio) this.audio.seal();
+      UI.toast(`🏅 Sfida completata! Ricompensa: ${ITEMS[q.reward].emoji} ${ITEMS[q.reward].label}`, 2800);
+      this.cb.onStateChange(this.state);
+    }
+  }
+
+  _banishMonster(m) {
+    const defense = ["torch", "silver", "cross", "garlic"].find((t) => this._hasItem(t));
+    if (!defense) {
+      UI.openDialog("Mostro!", "Non hai armi per respingerlo! Ti serve 🔦 torcia, ⚙️ argento, ✝️ croce o 🧄 aglio.", [{ label: "Fuggi", cb: UI.closeDialog }]);
+      return;
+    }
+    this._takeItem(defense);
+    const i = this.objects.monsters.indexOf(m);
+    if (i >= 0) this.objects.monsters.splice(i, 1);
+    this.worldRoot.remove(m);
+    this.state.monstersBanished++;
+    this._progress(15);
+    if (this.audio) this.audio.banish();
+    UI.toast(`💥 Mostro respinto con ${ITEMS[defense].emoji}!`, 1500);
+    this._checkQuest();
+    this.cb.onStateChange(this.state);
   }
 
   _usePortal(p) {
@@ -314,6 +406,7 @@ export class Game {
       p.userData.disc.material.opacity = 0.1;
       this.state.portalsClosed++;
       this._progress(30);
+      if (this.audio) this.audio.seal();
       UI.toast(`🔒 Portale sigillato! (${ITEMS[defense].emoji} usato)`);
       this._checkMoonCleared();
       return;
@@ -338,6 +431,7 @@ export class Game {
     UI.openDialog("Portale", `Attraversi il portale... Non sai dove ti porterà.`, [{
       label: "Entra", primary: true, cb: () => {
         UI.closeDialog();
+        if (this.audio) this.audio.portal();
         this.loadDimension(destDim, nextLevel, `Sei arrivato in ${names[destDim]}`);
       }
     }, { label: "Non ancora", cb: UI.closeDialog }]);
@@ -350,6 +444,7 @@ export class Game {
         UI.openDialog(this.charConfig.name || "Il tuo Io", "Hai la pozione magica. La versi sul tuo io imprigionato...", [{
           label: "Usa la pozione ✨", primary: true, cb: () => {
             UI.closeDialog();
+            if (this.audio) { this.audio.potion(); setTimeout(() => this.audio.victory(), 700); }
             this.state.alterFreed = true;
             this.state.potionReady = false;
             this._takeItem("herb"); this._takeItem("crystal"); this._takeItem("sunfruit");
@@ -387,6 +482,7 @@ export class Game {
     if (this.hitCooldown > 0) return;
     this.hitCooldown = 1.0;
     this.state.hp -= n;
+    if (this.audio) this.audio.hit();
     UI.hint("💥 Colpito!");
     this.cb.onStateChange(this.state);
     if (this.state.hp <= 0) this._die();
@@ -394,6 +490,7 @@ export class Game {
 
   _die() {
     this.running = false;
+    if (this.audio) this.audio.death();
     this.state.deaths++;
     this.state.challenges += 100;
     this.cb.onStateChange(this.state);
@@ -425,6 +522,7 @@ export class Game {
     this._updateProximityHints();
     animateWorldObjects(this.objects, t, dt);
     if (this.alterBeam) this.alterBeam.material.opacity = 0.2 + Math.sin(t * 3) * 0.12;
+    this.minimap.render(this);
 
     if (this.hitCooldown > 0) this.hitCooldown -= dt;
     if (this.interactLock > 0) this.interactLock -= dt;
@@ -504,11 +602,14 @@ export class Game {
       if (dist2(px, pz, it.position.x, it.position.z) < 1.4) {
         const type = it.userData.type;
         this._giveItem(type);
+        if (type === "key") this.state.keysFound++;
         this.worldRoot.remove(it);
         this.objects.items.splice(i, 1);
         this._progress(10);
+        if (this.audio) this.audio.pickup();
         UI.toast(`${ITEMS[type].emoji} ${ITEMS[type].label} raccolto!`, 1400);
         this._checkPotion();
+        this._checkQuest();
         this.cb.onStateChange(this.state);
       }
     }
@@ -518,6 +619,7 @@ export class Game {
     if (this.state.potionReady) return;
     if (POTION_RECIPE.every((t) => this._hasItem(t))) {
       this.state.potionReady = true;
+      if (this.audio) this.audio.potion();
       UI.toast("✨ POZIONE MAGICA pronta! Torna sulla Luna a salvare il tuo io.", 3500);
     }
   }

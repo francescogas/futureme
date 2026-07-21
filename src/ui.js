@@ -32,6 +32,13 @@ export function setObjective(text) {
   $("hud-objective").textContent = "Obiettivo: " + text;
 }
 
+export function setQuest(text) {
+  const el = $("hud-quest");
+  if (!text) { el.classList.add("hidden"); return; }
+  el.textContent = "🎯 " + text;
+  el.classList.remove("hidden");
+}
+
 export function updateHUD(state) {
   const dim = DIMENSIONS[state.dim];
   $("hud-dim-icon").textContent = dim.emoji;
