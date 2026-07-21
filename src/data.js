@@ -33,14 +33,33 @@ export const SKIN_COLORS = [
   { id: "s6", value: 0xc9b8ff },
 ];
 
-// Città della Terra: ognuna con landmark, colori, e liste di indizi
+// Città della Terra: ognuna con monumenti reali, palette e atmosfera propria.
+// theme: { skyTop, skyBottom, fog, fogNear, fogFar, ambient, sunColor, sunInt, night, stars }
 export const CITIES = [
-  { id: "roma",    name: "Roma",     landmark: "colosseo",  sky: 0x9fc6ff, ground: 0xd8c9a8, building: 0xcaa46b },
-  { id: "tokyo",   name: "Tokyo",    landmark: "tower",     sky: 0xffb6d9, ground: 0x2b2f45, building: 0x394b7a },
-  { id: "newyork", name: "New York", landmark: "skyscraper",sky: 0xbcd4ff, ground: 0x3a3f52, building: 0x5a6478 },
-  { id: "venezia", name: "Venezia",  landmark: "canal",     sky: 0xffe0a3, ground: 0x2f6f8f, building: 0xd6b98a },
-  { id: "parigi",  name: "Parigi",   landmark: "eiffel",    sky: 0xcfe0ff, ground: 0xb9b0a0, building: 0xcdbfa6 },
-  { id: "cairo",   name: "Il Cairo", landmark: "pyramid",   sky: 0xffd59e, ground: 0xe8cf95, building: 0xd8b878 },
+  {
+    id: "roma", name: "Roma", country: "Italia", landmark: "Colosseo", ground: 0xcbb894, building: 0xcaa46b,
+    theme: { skyTop: 0x2e6bd0, skyBottom: 0xbfe0ff, fog: 0xd8e6ff, fogNear: 45, fogFar: 140, ambient: 0.72, sunColor: 0xfff2d0, sunInt: 1.25, night: false, stars: false },
+  },
+  {
+    id: "tokyo", name: "Tokyo", country: "Giappone", landmark: "Tokyo Tower", ground: 0x22243a, building: 0x2a2f4a,
+    theme: { skyTop: 0x140a2e, skyBottom: 0x5a2a6a, fog: 0x2a1840, fogNear: 30, fogFar: 120, ambient: 0.45, sunColor: 0xff9ad0, sunInt: 0.6, night: true, stars: true },
+  },
+  {
+    id: "newyork", name: "New York", country: "USA", landmark: "Statua della Libertà", ground: 0x3a3f52, building: 0x6a7488,
+    theme: { skyTop: 0x3a5a9a, skyBottom: 0xcfd9e8, fog: 0xcbd6e6, fogNear: 40, fogFar: 150, ambient: 0.66, sunColor: 0xfff0d8, sunInt: 1.1, night: false, stars: false },
+  },
+  {
+    id: "venezia", name: "Venezia", country: "Italia", landmark: "Canal Grande", ground: 0x2f6f8f, building: 0xe0b98a,
+    theme: { skyTop: 0xff9a4a, skyBottom: 0xffe0a3, fog: 0xffd9a0, fogNear: 45, fogFar: 150, ambient: 0.7, sunColor: 0xffd090, sunInt: 1.15, night: false, stars: false },
+  },
+  {
+    id: "parigi", name: "Parigi", country: "Francia", landmark: "Torre Eiffel", ground: 0xb9b0a0, building: 0xd8cdb6,
+    theme: { skyTop: 0x6a86c0, skyBottom: 0xdfe6f2, fog: 0xdbe2ee, fogNear: 45, fogFar: 150, ambient: 0.7, sunColor: 0xfff2e0, sunInt: 1.1, night: false, stars: false },
+  },
+  {
+    id: "cairo", name: "Il Cairo", country: "Egitto", landmark: "Piramidi di Giza", ground: 0xe3c98a, building: 0xd8b878,
+    theme: { skyTop: 0xffb347, skyBottom: 0xffe7b0, fog: 0xffe2a0, fogNear: 50, fogFar: 160, ambient: 0.8, sunColor: 0xfff0c0, sunInt: 1.5, night: false, stars: false },
+  },
 ];
 
 export const DIMENSIONS = {

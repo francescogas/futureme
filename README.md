@@ -43,9 +43,19 @@ dello schermo per ruotare la telecamera.
   - 7 stili di abiti: **classico, pop, rock, punk, anni '70, futuristico, estivo**
   - Colore/carnagione personalizzabile
 - **Tre dimensioni** con atmosfere, illuminazione e regole diverse:
-  - 🌍 **Terra** — cammina fra le città del mondo (Roma, Tokyo, New York, Venezia,
-    Parigi, Il Cairo). Raccogli 🔑 **chiavi** e 🛂 **passaporti**: non saprai quali
-    portali apriranno né dove ti porteranno.
+  - 🌍 **Terra** — cammina fra le città del mondo, ognuna ricostruita con i suoi
+    **monumenti reali**, cielo, luce e atmosfera propri:
+    - **Roma** — il Colosseo, colonne romane, cipressi (cielo azzurro)
+    - **Tokyo** — la Tokyo Tower illuminata, il torii rosso, grattacieli e insegne
+      neon (notte)
+    - **New York** — grattacieli, l'Empire State, la Statua della Libertà, taxi gialli
+    - **Venezia** — il Canal Grande con le gondole, il Campanile di San Marco, i
+      ponti e le case colorate (tramonto)
+    - **Parigi** — la Torre Eiffel, l'Arco di Trionfo, i palazzi Haussmann
+    - **Il Cairo** — le Piramidi di Giza, la Sfinge, palme e dune (deserto)
+
+    Raccogli 🔑 **chiavi** e 🛂 **passaporti**: non saprai quali portali apriranno
+    né dove ti porteranno. Un **banner d'arrivo** annuncia ogni città e il suo monumento.
   - 🌙 **Luna** — sempre notte. Zombie, vampiri e lupi mannari ti danno la caccia.
     Difenditi con 🧄 aglio, ✝️ croci, ⚙️ argento e 🔦 torce, e **sigilla i portali
     d'invasione** prima che i mostri raggiungano la Terra.

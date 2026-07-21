@@ -32,6 +32,18 @@ export function setObjective(text) {
   $("hud-objective").textContent = "Obiettivo: " + text;
 }
 
+let bannerTimer = null;
+export function cityBanner(title, sub, landmark) {
+  const el = $("city-banner");
+  $("cb-title").textContent = title;
+  $("cb-sub").textContent = sub || "";
+  $("cb-landmark").textContent = landmark ? "★ " + landmark : "";
+  el.classList.remove("hidden");
+  el.style.animation = "none"; void el.offsetWidth; el.style.animation = "";
+  clearTimeout(bannerTimer);
+  bannerTimer = setTimeout(() => el.classList.add("hidden"), 3400);
+}
+
 export function setQuest(text) {
   const el = $("hud-quest");
   if (!text) { el.classList.add("hidden"); return; }

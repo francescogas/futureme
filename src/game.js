@@ -117,10 +117,12 @@ export class Game {
     this.worldRoot = built.root;
     this.objects = built.objects;
     this.worldSize = built.size;
+    this.theme = built.theme;
+    this.city = built.city;
     this.state.cityName = built.cityName || DIMENSIONS[dimId].name;
     this.scene.add(this.worldRoot);
 
-    this._setupLighting(dimId);
+    this._setupLighting(dimId, built.theme);
     this._populate(dimId, level);
 
     // posiziona il giocatore al centro
@@ -131,33 +133,57 @@ export class Game {
     this._setObjectiveForDim(dimId);
     if (this.audio) this.audio.setAmbient(dimId);
     this.cb.onStateChange(this.state);
+    // banner d'arrivo
+    if (dimId === "earth" && this.city) {
+      UI.cityBanner(this.city.name, "Terra · " + this.city.country, this.city.landmark);
+    } else {
+      UI.cityBanner(DIMENSIONS[dimId].name, "Dimensione", DIMENSIONS[dimId].emoji + " " + DIMENSIONS[dimId].desc.split(".")[0]);
+    }
     if (spawnMsg) UI.toast(spawnMsg);
   }
 
-  _setupLighting(dimId) {
-    const dim = DIMENSIONS[dimId];
-    const amb = new THREE.AmbientLight(0xffffff, dimId === "moon" ? 0.25 : 0.6);
+  _setupLighting(dimId, theme) {
+    const amb = new THREE.AmbientLight(0xffffff, theme.ambient);
     this.scene.add(amb);
 
-    const sun = new THREE.DirectionalLight(0xffffff, dimId === "moon" ? 0.35 : 1.1);
-    sun.position.set(20, 30, 10);
+    const sun = new THREE.DirectionalLight(theme.sunColor, theme.sunInt);
+    sun.position.set(20, 34, 12);
     sun.castShadow = true;
     sun.shadow.mapSize.set(1024, 1024);
-    sun.shadow.camera.left = -60; sun.shadow.camera.right = 60;
-    sun.shadow.camera.top = 60; sun.shadow.camera.bottom = -60;
+    sun.shadow.camera.left = -64; sun.shadow.camera.right = 64;
+    sun.shadow.camera.top = 64; sun.shadow.camera.bottom = -64;
+    sun.shadow.bias = -0.0004;
     this.scene.add(sun);
 
-    let skyTop, skyBot, fogColor, fogNear, fogFar;
-    if (dimId === "earth") { skyTop = 0x2a4a8a; skyBot = 0xbcd4ff; fogColor = 0xbcd4ff; fogNear = 40; fogFar = 130; sun.color.set(0xfff2d0); }
-    else if (dimId === "moon") { skyTop = 0x05060f; skyBot = 0x1a1a3a; fogColor = 0x0a0a1e; fogNear = 18; fogFar = 75; sun.color.set(0x8ea2ff); this._addStars(); this._addMoon(); }
-    else { skyTop = 0x2aa0ff; skyBot = 0xffe9a0; fogColor = 0xffe9b0; fogNear = 50; fogFar = 150; sun.color.set(0xfff4c0); sun.intensity = 1.4; }
+    if (theme.stars) this._addStars();
+    if (theme.bigMoon) this._addMoon();
+    if (theme.bigSun) this._addBigSun();
 
-    this.scene.background = new THREE.Color(skyBot);
-    this.scene.fog = new THREE.Fog(fogColor, fogNear, fogFar);
+    // sfondo a gradiente cielo (cupola)
+    this._addSkyDome(theme.skyTop, theme.skyBottom);
+    this.scene.background = new THREE.Color(theme.skyBottom);
+    this.scene.fog = new THREE.Fog(theme.fog, theme.fogNear, theme.fogFar);
 
-    // emisferica per tinta cielo
-    const hemi = new THREE.HemisphereLight(skyTop, skyBot, 0.5);
+    const hemi = new THREE.HemisphereLight(theme.skyTop, theme.skyBottom, 0.55);
     this.scene.add(hemi);
+  }
+
+  _addSkyDome(top, bottom) {
+    const geo = new THREE.SphereGeometry(180, 24, 16);
+    const mat = new THREE.ShaderMaterial({
+      side: THREE.BackSide, depthWrite: false,
+      uniforms: { top: { value: new THREE.Color(top) }, bottom: { value: new THREE.Color(bottom) } },
+      vertexShader: `varying vec3 vP; void main(){ vP = position; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }`,
+      fragmentShader: `varying vec3 vP; uniform vec3 top; uniform vec3 bottom;
+        void main(){ float h = clamp((normalize(vP).y*0.5)+0.5, 0.0, 1.0); gl_FragColor = vec4(mix(bottom, top, h), 1.0); }`,
+    });
+    this.scene.add(new THREE.Mesh(geo, mat));
+  }
+
+  _addBigSun() {
+    const s = new THREE.Mesh(new THREE.SphereGeometry(6, 24, 24), new THREE.MeshBasicMaterial({ color: 0xffe066 }));
+    s.position.set(24, 34, -46); this.scene.add(s);
+    const glow = new THREE.PointLight(0xfff0b0, 0.5, 300); glow.position.copy(s.position); this.scene.add(glow);
   }
 
   _addStars() {
