@@ -1675,16 +1675,18 @@ export class Game {
   _updateProximityHints() {
     const px = this.player.position.x, pz = this.player.position.z;
     let hint = null;
-    if (this.alter && dist2(px, pz, this.alter.position.x, this.alter.position.z) < 9) hint = "Premi E — il tuo Io";
+    if (this.alter && dist2(px, pz, this.alter.position.x, this.alter.position.z) < 9) hint = "✋ Il tuo Io (E)";
     else {
-      for (const n of this.objects.npcs) if (dist2(px, pz, n.position.x, n.position.z) < 9) { hint = "Premi E — parla"; break; }
+      for (const n of this.objects.npcs) if (dist2(px, pz, n.position.x, n.position.z) < 9) { hint = "✋ Parla (E)"; break; }
       if (!hint) for (const p of this.objects.portals) {
         if (dist2(px, pz, p.position.x, p.position.z) < 9) {
-          hint = p.userData.dest === "invasion" ? "Premi E — sigilla il portale" : "Premi E — entra nel portale";
+          hint = p.userData.dest === "invasion" ? "✋ Sigilla il portale (E)" : "✋ Entra nel portale (E)";
           break;
         }
       }
     }
+    // evidenzia il pulsante Interagisci quando c'è qualcosa vicino
+    UI.setInteractReady(!!hint);
     if (hint) UI.hint(hint);
   }
 

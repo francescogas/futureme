@@ -466,6 +466,12 @@ h2 { margin-bottom: 14px; font-size: 26px; }
   transition: transform 0.06s;
 }
 .tb:active { transform: scale(0.9); filter: brightness(1.2); }
+/* pulsa quando sei vicino a qualcosa con cui interagire */
+.tb.ready { animation: tb-ready 0.85s ease-in-out infinite; }
+@keyframes tb-ready {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(77,243,255,0.5), 0 0 14px rgba(77,243,255,0.5); transform: scale(1); }
+  50% { box-shadow: 0 0 0 5px rgba(77,243,255,0.85), 0 0 26px rgba(77,243,255,0.9); transform: scale(1.12); }
+}
 .tb-primary {
   width: 92px; height: 92px; font-size: 40px;
   background: radial-gradient(circle at 35% 30%, #ff6a5a, #d93a2b);
@@ -637,7 +643,10 @@ h2 { margin-bottom: 14px; font-size: 26px; }
   .hud-right .hud-stat.small { display: none; }
   .hud-hearts { transform: scale(0.8); transform-origin: left center; }
   .hud-objective { font-size: 12px; bottom: 150px; left: 50%; transform: translateX(-50%); max-width: 74vw; text-align: center; }
-  .hud-inventory { transform: scale(0.88); transform-origin: right center; }
+  .hud-hint { bottom: 210px; font-size: 13px; padding: 8px 16px; }
+  /* Inventario (oggetti raccolti) in alto al centro, ben visibile e fuori dai comandi */
+  .hud-inventory { top: 54px; bottom: auto; left: 50%; transform: translateX(-50%) scale(0.9); transform-origin: top center; gap: 5px; max-width: 60vw; }
+  .inv-item { padding: 3px 7px; font-size: 13px; min-width: 34px; }
   /* Pulsanti d'angolo un filo più piccoli */
   .corner-btn { width: 40px; height: 40px; font-size: 18px; }
 }

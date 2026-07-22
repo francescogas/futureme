@@ -29,6 +29,16 @@ export function hint(msg) {
   hintTimer = setTimeout(() => el.classList.remove("show"), 1800);
 }
 
+// Evidenzia i pulsanti di interazione (✋ touch + 🅴 d'angolo) quando
+// il giocatore è vicino a qualcosa con cui interagire.
+let _lastReady = null;
+export function setInteractReady(on) {
+  if (on === _lastReady) return;
+  _lastReady = on;
+  const tb = $("tb-interact");
+  if (tb) tb.classList.toggle("ready", !!on);
+}
+
 export function setObjective(text) {
   $("hud-objective").textContent = t("Obiettivo:") + " " + t(text);
 }
