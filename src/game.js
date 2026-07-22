@@ -745,8 +745,8 @@ export class Game {
       this.interactLock = 0.35;
       return;
     }
-    // Alter ego
-    if (this.alter && dist2(px, pz, this.alter.position.x, this.alter.position.z) < 6) {
+    // Alter ego (stessa portata dell'evidenziazione: dist² < 9)
+    if (this.alter && dist2(px, pz, this.alter.position.x, this.alter.position.z) < 9) {
       this._confrontAlter();
       this.interactLock = 0.4;
       return;
@@ -760,11 +760,11 @@ export class Game {
     if (nearestMon) { this._banishMonster(nearestMon); this.interactLock = 0.4; return; }
     // NPC
     for (const n of this.objects.npcs) {
-      if (dist2(px, pz, n.position.x, n.position.z) < 6) { this._talkNPC(n); this.interactLock = 0.4; return; }
+      if (dist2(px, pz, n.position.x, n.position.z) < 9) { this._talkNPC(n); this.interactLock = 0.4; return; }
     }
-    // Portali
+    // Portali (stessa portata dell'evidenziazione)
     for (const p of this.objects.portals) {
-      if (dist2(px, pz, p.position.x, p.position.z) < 5) { this._usePortal(p); this.interactLock = 0.4; return; }
+      if (dist2(px, pz, p.position.x, p.position.z) < 9) { this._usePortal(p); this.interactLock = 0.4; return; }
     }
     UI.hint("Niente con cui interagire qui.");
   }
